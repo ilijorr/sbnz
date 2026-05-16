@@ -59,7 +59,107 @@ Sistem podržava tri specijalizacije s različitim resursnim paradigmama i mehan
 |---|---|---|
 | Fury Warrior | Rage (0–100) | Proc mehanike, faza egzekucije, burst efekti |
 | Subtlety Rogue | Energy (0–100) + Kombo poeni (0–7) | Burst prozori u stealth modu, upravljanje kombo poenima |
-| Shadow Priest | Madness (0–100) | Upravljanje višestrukim vremenskim efektima na protivniku, proc mehanike |
+| Havoc Demon Hunter | Fury (0–100+) | Transformacija (Metamorphosis), Essence Break amplifikacija, dvostepeni burst prozor |
+
+#### Lista pravila forward chaininga
+
+**1. nivo — Derivacija stanja** (izvođenje apstraktnih činjenica iz sirovog stanja igre)
+
+| Oznaka | Uslov | Izvedena činjenica | Specijalizacija |
+|---|---|---|---|
+| R1 | Protivnik ima manje od 20% zdravlja | `ExecutePhase` — aktivirana faza egzekucije | sve |
+| R2 | Efekat Enrage (pojačanje brzine i štete) je aktivan | `EnragedState` | Fury Warrior |
+| R3 | Bes (Rage) ≥ 80 od 100 | `RageOvercapRisk` — resurs blizu maksimuma | Fury Warrior |
+| R4 | Proc Sudden Death je aktivan (besplatna upotreba Execute) | `SDProcActive` | Fury Warrior |
+| R5 | Sposobnost Recklessness nije na punjenju | `MajorCooldownReady` | Fury Warrior |
+| R6 | Efekat Shadow Dance je aktivan | `StealthWindowActive` — stealth burst prozor otvoren | Subtlety Rogue |
+| R7 | Kombo poeni ≥ 5 (prag za finalni udar) | `FinisherReady` | Subtlety Rogue |
+| R8 | Efekat Rupture na protivniku ima < 7s preostalog trajanja | `RuptureRefreshNeeded` — efekat treba obnoviti | Subtlety Rogue |
+| R9 | Sposobnost Symbols of Death nije na punjenju | `SymbolsReady` | Subtlety Rogue |
+| R10 | Buff Metamorphosis je aktivan (DH je transformisan) | `MetaActive` — sve sposobnosti prelaze u pojačanu verziju | Havoc DH |
+| R11 | Debuff Essence Break je aktivan na protivniku | `EssenceBreakActive` — sledeći udari su amplifikovani | Havoc DH |
+| R12 | Fury ≥ 80 od 100 | `FuryOvercapRisk` — resurs blizu maksimuma | Havoc DH |
+| R13 | Sposobnost Eye Beam nije na punjenju | `EyeBeamReady` — primarni burst cooldown dostupan | Havoc DH |
+| R14 | Sposobnost Blade Dance / Death Sweep nije na punjenju | `BladeDanceReady` | Havoc DH |
+| R15 | Buff Unbound Chaos je aktivan (pojačani Fel Rush) | `UnboundChaosActive` | Havoc DH |
+
+**2. nivo — Taktička procena** (kombinovanje izvedenih činjenica u taktičke zaključke)
+
+| Oznaka | Uslovi | Izvedena činjenica | Specijalizacija |
+|---|---|---|---|
+| T1 | `EnragedState` + `MajorCooldownReady` | `BurstWindowOpportunity` — optimalni trenutak za aktivaciju glavne sposobnosti | Fury Warrior |
+| T2 | `ExecutePhase` ILI `SDProcActive` | `ExecutePriorityActive` — egzekucija je prioritet | Fury Warrior |
+| T3 | `RageOvercapRisk` + Enrage NIJE aktivan | `RampageRequired` — treba aktivirati Rampage da smanji bes | Fury Warrior |
+| T4 | `RageOvercapRisk` + Enrage je aktivan | `EmergencyRageDump` — hitno trošenje besa | Fury Warrior |
+| T5 | `SymbolsReady` + `StealthWindowActive` NIJE aktivan | `PrepareBurstEntry` — pripremiti ulazak u burst prozor | Subtlety Rogue |
+| T6 | `StealthWindowActive` + `FinisherReady` | `SpendCPInDance` — trošiti kombo poene unutar Dance prozora | Subtlety Rogue |
+| T7 | `RuptureRefreshNeeded` + `FinisherReady` | `PrioritizeRupture` — obnavljanje Rupture-a je prioritet | Subtlety Rogue |
+| T8 | `MetaActive` + `BladeDanceReady` | `DeathSweepWindow` — koristiti Death Sweep (Meta verzija Blade Dance-a) | Havoc DH |
+| T9 | `EssenceBreakActive` + `MetaActive` | `MaxBurstWindow` — Essence Break amplifikuje Death Sweep/Annihilation tokom Mete | Havoc DH |
+| T10 | `EyeBeamReady` + `MetaActive` NIJE | `BurstEntryReady` — Eye Beam ulazi u burst; sa Demonic talentom automatski aktivira Metu | Havoc DH |
+
+**3. nivo — Preporuka akcije** (mapiranje taktičkih procena na konkretne sposobnosti, opadajući prioritet)
+
+*Fury Warrior:*
+
+| Prioritet | Uslov | Preporuka |
+|---|---|---|
+| 110 | `EmergencyRageDump` | **Rampage** |
+| 100 | `ExecutePriorityActive` + `SDProcActive` | **Execute** (besplatni proc) |
+| 90 | `BurstWindowOpportunity` | **Recklessness** |
+| 80 | `RampageRequired` | **Rampage** |
+| 60 | `ExecutePriorityActive` (bez proca) | **Execute** |
+| 50 | (podrazumevano) | **Bloodthirst / Raging Blow** |
+
+*Subtlety Rogue:*
+
+| Prioritet | Uslov | Preporuka |
+|---|---|---|
+| 110 | `PrioritizeRupture` | **Rupture** |
+| 100 | `PrepareBurstEntry` | **Symbols of Death** |
+| 90 | `SpendCPInDance` + `PrioritizeRupture` NIJE | **Eviscerate** |
+| 80 | `StealthWindowActive` + `FinisherReady` NIJE | **Shadowstrike** |
+| 70 | `FinisherReady` (van Dance prozora) | **Eviscerate** |
+| 50 | (podrazumevano) | **Backstab** |
+
+*Havoc Demon Hunter:*
+
+| Prioritet | Uslov | Preporuka |
+|---|---|---|
+| 110 | `MaxBurstWindow` | **Death Sweep** |
+| 100 | `EssenceBreakActive` + `MetaActive` NIJE | **Chaos Strike** (konzumirati Essence Break van Mete) |
+| 90 | `BurstEntryReady` | **Eye Beam** |
+| 80 | `DeathSweepWindow` | **Death Sweep** |
+| 70 | `BladeDanceReady` + `MetaActive` NIJE | **Blade Dance** |
+| 60 | `FuryOvercapRisk` | **Chaos Strike** |
+| 50 | (podrazumevano, van Mete) | **Demons Bite** |
+
+#### Backward chaining upiti
+
+Backward chaining je organizovan u tri nivoa, pri čemu svaki viši nivo poziva niži:
+
+**Nivo 3 (list) — Provera resursa** (`resourceSufficient(spec, abilityName)`)  
+Najdublji nivo proverava da li igrač ima dovoljno resursa *odgovarajućeg tipa* za datu sposobnost. Svaka specijalizacija ima drugačiji resursni sistem: Fury Warrior koristi Bes, Subtlety Rogue Energiju i Kombo poene, Havoc Demon Hunter Fury. Primer: za Rampage je potrebno Bes ≥ 80, za Eviscerate Kombo poeni ≥ 5, za Chaos Strike Fury ≥ 20.
+
+**Nivo 2 (srednji) — Provera izvršivosti sposobnosti** (`abilityExecutable(abilityName)`)  
+Poziva `resourceSufficient` da proveri resurse, a zatim proverava i dodatne uslove: sposobnost nije na punjenju (cooldown = 0) i zadovoljeni su posebni preduslovi (npr. aktivan stealth za Shadowstrike). Koristi se za generisanje dela lanca zaključivanja u izlazu.
+
+**Nivo 1 (koren) — Ostvarivost strateškog cilja** (`rotationGoalAchievable(goal)`)  
+Poziva `abilityExecutable` za sposobnosti koje su potrebne za dati strateški cilj:
+- `BURST_WINDOW` — proverava da li je glavna cooldown sposobnost specijalizacije izvršiva (Recklessness / Eye Beam)
+- `EXECUTE_PHASE_READY` — proverava `abilityExecutable("Execute")` i prisustvo `ExecutePhase` fakta (Fury Warrior)
+- `FINISHER_READY` — proverava `abilityExecutable("Eviscerate")` i prisustvo `FinisherReady` fakta (Subtlety Rogue)
+- `META_BURST_WINDOW` — proverava `abilityExecutable("EyeBeam")` i `abilityExecutable("Metamorphosis")` i odsustvo `MetaActive` fakta (Havoc DH)
+
+Primer lanca za pitanje „Da li je burst window ostvariv?" (Fury Warrior):
+```
+rotationGoalAchievable("BURST_WINDOW")
+  → abilityExecutable("Recklessness")
+      → resourceSufficient("FURY_WARRIOR", "Recklessness")  ✓
+      → cooldown == 0  ✓
+  → true
+```
+Koristi se za generisanje upozorenja tipa „Recklessness dostupan za 1 potez — odloži Rampage" i za objašnjenje zašto određeni cilj trenutno nije ostvariv.
 
 ### Konkretan primer zaključivanja
 
