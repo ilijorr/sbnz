@@ -1,0 +1,142 @@
+package rules;
+
+import com.faks.sbnz.wow_rotation_advisor.model.PlayerState;
+import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
+import com.faks.sbnz.wow_rotation_advisor.model.TargetState;
+import com.faks.sbnz.wow_rotation_advisor.facts.EnragedState;
+import com.faks.sbnz.wow_rotation_advisor.facts.RageHighRisk;
+import com.faks.sbnz.wow_rotation_advisor.facts.RecklessnessReady;
+import com.faks.sbnz.wow_rotation_advisor.facts.BurstWindowOpportunity;
+import com.faks.sbnz.wow_rotation_advisor.facts.RampageUrgent;
+import com.faks.sbnz.wow_rotation_advisor.facts.Recommendation;
+
+// ============================================================
+// NIVO 1 — DERIVACIJA STANJA
+// Izvode apstraktne cinjenice iz sirovog stanja igre
+// ============================================================
+
+rule "L1 - Detect Enraged State"
+    when
+        $p : PlayerState(enrageActive == true, enrageRemainingSeconds > 0)
+    then
+        insert(new EnragedState($p.getEnrageRemainingSeconds()));
+end
+
+rule "L1 - Detect Rage High Risk"
+    when
+        $p : PlayerState(rage >= 80)
+    then
+        insert(new RageHighRisk($p.getRage()));
+end
+
+rule "L1 - Detect Recklessness Ready"
+    when
+        AbilityState(name == "Recklessness", cooldownRemaining == 0.0)
+    then
+        insert(new RecklessnessReady());
+end
+
+// ============================================================
+// NIVO 2 — TAKTICKA PROCENA
+// Kombinuju izvedene cinjenice u takticke zakljucke
+// ============================================================
+
+rule "L2 - Burst Window Opportunity"
+    when
+        EnragedState()
+        RecklessnessReady()
+    then
+        insert(new BurstWindowOpportunity());
+end
+
+rule "L2 - Rampage Urgent - Rage High"
+    when
+        $rhr : RageHighRisk()
+    then
+        insert(new RampageUrgent("Rage visok (" + $rhr.getCurrentRage() + "/100) — overcap rizik"));
+end
+
+rule "L2 - Rampage Urgent - Enrage Expiring"
+    when
+        $p : PlayerState(enrageActive == true, enrageRemainingSeconds > 0, enrageRemainingSeconds <= 1.5)
+        not RageHighRisk()
+    then
+        insert(new RampageUrgent("Enrage istice za " + $p.getEnrageRemainingSeconds() + "s — hitno obnovi Rampage"));
+end
+
+// ============================================================
+// NIVO 3 — PREPORUKA AKCIJE
+// Mapiraju takticke procene na konkretne sposobnosti
+// Veci salience = visi prioritet
+// ============================================================
+
+rule "L3 - Recommend Execute (Sudden Death Proc)"
+    salience 100
+    when
+        PlayerState(suddenDeathProcActive == true)
+        AbilityState(name == "Execute", cooldownRemaining == 0.0)
+    then
+        insert(new Recommendation(
+            "Execute",
+            100,
+            "HIGH",
+            "Sudden Death proc aktivan — besplatan Execute (1.7 proc/min, reset CD)"
+        ));
+end
+
+rule "L3 - Recommend Recklessness (Burst Window)"
+    salience 90
+    when
+        BurstWindowOpportunity()
+        AbilityState(name == "Recklessness", cooldownRemaining == 0.0)
+    then
+        insert(new Recommendation(
+            "Recklessness",
+            90,
+            "HIGH",
+            "Enrage aktivan + Recklessness spreman — optimalni burst prozor (+50% Rage gen, +20% crit, 12s)"
+        ));
+end
+
+rule "L3 - Recommend Rampage (Urgent)"
+    salience 80
+    when
+        $ru : RampageUrgent()
+        PlayerState(rage >= 80)
+    then
+        insert(new Recommendation(
+            "Rampage",
+            80,
+            "HIGH",
+            $ru.getReason()
+        ));
+end
+
+rule "L3 - Recommend Bloodthirst (No Enrage)"
+    salience 60
+    when
+        not EnragedState()
+        AbilityState(name == "Bloodthirst", cooldownRemaining == 0.0)
+    then
+        insert(new Recommendation(
+            "Bloodthirst",
+            60,
+            "MEDIUM",
+            "Enrage nije aktivan — Bloodthirst za 30% sansu Enrage proca (generise 8 Rage)"
+        ));
+end
+
+rule "L3 - Recommend Raging Blow (Default Filler)"
+    salience 50
+    when
+        AbilityState(name == "Raging Blow", cooldownRemaining == 0.0, chargesAvailable > 0)
+        not RampageUrgent()
+        not BurstWindowOpportunity()
+    then
+        insert(new Recommendation(
+            "Raging Blow",
+            50,
+            "LOW",
+            "Podrazumevani filler — generise 12 Rage (25% sansa reset punjenja)"
+        ));
+end

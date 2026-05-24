@@ -61,6 +61,33 @@ Sistem podržava tri specijalizacije s različitim resursnim paradigmama i mehan
 | Subtlety Rogue | Energy (0–100) + Kombo poeni (0–7) | Burst prozori u stealth modu, upravljanje kombo poenima |
 | Havoc Demon Hunter | Fury (0–100+) | Transformacija (Metamorphosis), Essence Break amplifikacija, dvostepeni burst prozor |
 
+#### Šabloni (templates)
+
+Analizom pravila identifikovana su četiri ponavljajuća strukturna obrasca koja se šablonizuju Drools `template` konstruktima, čime se smanjuje ukupan broj eksplicitnih pravila u bazi znanja.
+
+| Šablon | Parametri | Zamenjuje | Instancijacija |
+|---|---|---|---|
+| **CooldownReady** | `abilityName`, `spec` | R8, R9, R14, R15, R17, R21, R23, R24, R25 | 9 |
+| **ResourceOvercapRisk** | `spec`, `resourceField`, `threshold` | R5, R22 | 2 |
+| **EffectExpiring** | `effectName`, `threshold` | R4, R12, R13 | 3 |
+| **FinisherForRefresh** | `refreshFact`, `priorityFact` | T6, T7 | 2 |
+
+**CooldownReady** — detektuje da sposobnost nije na punjenju i umeće odgovarajući fakt. Svih 9 pravila ima identičnu strukturu: `AbilityState(name == X, cooldownRemaining == 0.0) → insert(XReady)`. Šablon parametrizuje naziv sposobnosti i specijalizaciju.
+
+Instancijacije: `(Recklessness, FW)`, `(OdynsFury, FW)`, `(Flagellation, SR)`, `(SymbolsOfDeath, SR)`, `(SecretTechnique, SR)`, `(EssenceBreak, DH)`, `(EyeBeam, DH)`, `(BladeDance, DH)`, `(Felblade, DH)`.
+
+**ResourceOvercapRisk** — detektuje da je primarni resurs blizu maksimuma i umeće fakt rizika. Struktura: `PlayerState(resource >= threshold) → insert(XHighRisk)`. Parametri određuju koji resurs se prati i prag.
+
+Instancijacije: `(FURY_WARRIOR, rage, 80, RageHighRisk)`, `(HAVOC_DH, fury, 80, FuryHighRisk)`.
+
+**EffectExpiring** — detektuje da vremenski efekat uskoro ističe ili nije aktivan i umeće fakt za obnavljanje. Struktura: `EffectState(name == X, remainingSeconds < threshold) → insert(XRefreshNeeded)`.
+
+Instancijacije: `(Enrage, 1.5, EnrageExpiring)`, `(Rupture, 7.0, RuptureRefreshNeeded)`, `(SliceAndDice, 2.0, SndRefreshNeeded)`.
+
+**FinisherForRefresh** — kombinuje nivo-1 fakt obnavljanja efekta i prisustvo `FinisherReady` u taktički prioritet (nivo 2). Struktura: `XRefreshNeeded + FinisherReady → insert(PrioritizeX)`.
+
+Instancijacije: `(SndRefreshNeeded, PrioritizeSnd)`, `(RuptureRefreshNeeded, PrioritizeRupture)`.
+
 #### Lista pravila forward chaininga
 
 **1. nivo — Derivacija stanja** (izvođenje apstraktnih činjenica iz sirovog stanja igre)

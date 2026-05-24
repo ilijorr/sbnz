@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoW Rotation Advisor — Fury Warrior</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d0d; color: #e8d5a3; font-family: 'Segoe UI', sans-serif; min-height: 100vh; padding: 20px; }
+
+  h1 { text-align: center; color: #c69b3a; font-size: 1.6rem; letter-spacing: 2px; margin-bottom: 4px; text-transform: uppercase; }
+  .subtitle { text-align: center; color: #8a7040; font-size: 0.85rem; margin-bottom: 24px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 900px; margin: 0 auto; }
+  .card { background: #1a1a1a; border: 1px solid #3a3020; border-radius: 8px; padding: 16px; }
+  .card h2 { color: #c69b3a; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #2a2010; padding-bottom: 6px; }
+
+  /* Rage bar */
+  .rage-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; }
+  .rage-track { background: #111; border-radius: 4px; height: 28px; overflow: hidden; border: 1px solid #3a2010; }
+  .rage-fill { height: 100%; background: linear-gradient(90deg, #8b0000, #cc3300, #ff6600); border-radius: 4px; transition: width 0.4s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; font-size: 0.85rem; color: #fff; }
+
+  /* Buffs */
+  .buffs { display: flex; gap: 10px; flex-wrap: wrap; }
+  .buff { background: #111; border: 1px solid #4a3010; border-radius: 6px; padding: 8px 12px; text-align: center; min-width: 90px; }
+  .buff.active { border-color: #c69b3a; background: #1f1800; }
+  .buff.inactive { opacity: 0.35; }
+  .buff-name { font-size: 0.7rem; color: #8a7040; text-transform: uppercase; }
+  .buff-timer { font-size: 1.3rem; font-weight: bold; color: #ffc040; }
+  .buff-timer.low { color: #ff4040; }
+
+  /* Abilities */
+  .abilities { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ability-btn { background: #111; border: 2px solid #3a2010; border-radius: 6px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s; position: relative; }
+  .ability-btn:hover { background: #1f1800; border-color: #c69b3a; }
+  .ability-btn.recommended { border-color: #00cc44; background: #001a0a; box-shadow: 0 0 12px rgba(0,204,68,0.3); animation: pulse 1.2s ease-in-out infinite; }
+  .ability-btn.on-cooldown { opacity: 0.45; cursor: not-allowed; }
+  .ability-btn.on-cooldown:hover { background: #111; border-color: #3a2010; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 8px rgba(0,204,68,0.3); } 50% { box-shadow: 0 0 20px rgba(0,204,68,0.6); } }
+  .ability-name { font-size: 0.85rem; font-weight: bold; color: #e8d5a3; }
+  .ability-cd { font-size: 0.75rem; color: #8a7040; margin-top: 2px; }
+  .ability-cd.ready { color: #00cc44; }
+  .ability-charges { font-size: 0.7rem; color: #6a8080; }
+
+  /* Recommendation */
+  .recommendation { grid-column: 1 / -1; }
+  .rec-box { background: #001a0a; border: 2px solid #00cc44; border-radius: 8px; padding: 16px; text-align: center; }
+  .rec-box.high { border-color: #ff6600; background: #1a0a00; }
+  .rec-box.medium { border-color: #ccaa00; background: #1a1500; }
+  .rec-box.low { border-color: #4a6a4a; background: #0a1a0a; }
+  .rec-ability { font-size: 1.6rem; font-weight: bold; color: #ffffff; margin-bottom: 4px; }
+  .rec-urgency { font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  .urgency-HIGH { color: #ff6600; }
+  .urgency-MEDIUM { color: #ccaa00; }
+  .urgency-LOW { color: #4a8a4a; }
+  .rec-reason { font-size: 0.82rem; color: #a09070; }
+
+  /* Warning */
+  .warning-bar { grid-column: 1 / -1; background: #2a0000; border: 1px solid #880000; border-radius: 6px; padding: 10px 16px; color: #ff4040; font-size: 0.85rem; text-align: center; display: none; }
+  .warning-bar.visible { display: block; }
+
+  /* Target HP */
+  .target-hp { display: flex; align-items: center; gap: 10px; }
+  .target-hp input[type=range] { flex: 1; accent-color: #cc3300; }
+  .target-hp span { min-width: 45px; text-align: right; font-weight: bold; }
+
+  /* Reset button */
+  .reset-btn { display: block; margin: 16px auto 0; background: #2a1500; border: 1px solid #c69b3a; color: #c69b3a; padding: 8px 24px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+  .reset-btn:hover { background: #3a2500; }
+
+  .error-msg { color: #ff4040; font-size: 0.8rem; text-align: center; margin-top: 8px; min-height: 20px; }
+</style>
+</head>
+<body>
+
+<h1>WoW Rotation Advisor</h1>
+<p class="subtitle">Fury Warrior · Dragonflight 10.1–10.2 · Drools Rule Engine</p>
+
+<div class="grid">
+
+  <!-- Warning -->
+  <div class="warning-bar" id="warningBar"></div>
+
+  <!-- Recommendation -->
+  <div class="card recommendation">
+    <h2>Preporucena akcija</h2>
+    <div class="rec-box" id="recBox">
+      <div class="rec-ability" id="recAbility">—</div>
+      <div class="rec-urgency" id="recUrgency"></div>
+      <div class="rec-reason" id="recReason"></div>
+    </div>
+  </div>
+
+  <!-- Resources -->
+  <div class="card">
+    <h2>Resursi</h2>
+    <div class="rage-label">
+      <span>Rage</span>
+      <span id="rageVal">0 / 100</span>
+    </div>
+    <div class="rage-track">
+      <div class="rage-fill" id="rageFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Buffs -->
+  <div class="card">
+    <h2>Aktivni efekti</h2>
+    <div class="buffs">
+      <div class="buff inactive" id="buffEnrage">
+        <div class="buff-name">Enrage</div>
+        <div class="buff-timer" id="enrageTimer">—</div>
+      </div>
+      <div class="buff inactive" id="buffRecklessness">
+        <div class="buff-name">Recklessness</div>
+        <div class="buff-timer" id="reckTimer">—</div>
+      </div>
+      <div class="buff inactive" id="buffSuddenDeath">
+        <div class="buff-name">Sudden Death</div>
+        <div class="buff-timer">PROC</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abilities -->
+  <div class="card" style="grid-column: 1 / -1">
+    <h2>Sposobnosti (klikni da koristis)</h2>
+    <div class="abilities" id="abilitiesGrid"></div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Target HP -->
+  <div class="card" style="grid-column: 1 / -1">
+    <h2>Zdravlje protivnika</h2>
+    <div class="target-hp">
+      <input type="range" id="targetHpSlider" min="0" max="100" value="100" step="1">
+      <span id="targetHpVal">100%</span>
+    </div>
+    <div style="font-size:0.75rem;color:#6a6040;margin-top:6px;">
+      Spusti ispod 20% da aktiviras Execute fazu
+    </div>
+  </div>
+
+</div>
+
+<button class="reset-btn" onclick="reset()">Resetuj borbu</button>
+
+<script>
+const ABILITIES = ["Bloodthirst", "Raging Blow", "Rampage", "Execute", "Recklessness"];
+const ABILITY_INFO = {
+  "Bloodthirst":  { cost: "0 Rage", gen: "+8 Rage, 30% Enrage" },
+  "Raging Blow":  { cost: "0 Rage", gen: "+12 Rage, 2 pun." },
+  "Rampage":      { cost: "80 Rage", gen: "Uvek Enrage (4s)" },
+  "Execute":      { cost: "25 Rage", gen: "+40 Rage, <20% HP / SD" },
+  "Recklessness": { cost: "0",      gen: "+50% Rage gen, 12s" }
+};
+
+let currentRec = "";
+
+function buildAbilityGrid() {
+  const grid = document.getElementById("abilitiesGrid");
+  grid.innerHTML = "";
+  ABILITIES.forEach(name => {
+    const btn = document.createElement("div");
+    btn.className = "ability-btn";
+    btn.id = "btn_" + name.replace(/ /g, "_");
+    btn.innerHTML = `
+      <div class="ability-name">${name}</div>
+      <div class="ability-cd" id="cd_${name.replace(/ /g,'_')}">—</div>
+      <div class="ability-charges" id="ch_${name.replace(/ /g,'_')}"></div>
+      <div style="font-size:0.68rem;color:#5a5040;margin-top:3px">${ABILITY_INFO[name].cost} · ${ABILITY_INFO[name].gen}</div>
+    `;
+    btn.onclick = () => useAbility(name);
+    grid.appendChild(btn);
+  });
+}
+
+async function fetchState() {
+  const res = await fetch("/api/state");
+  const data = await res.json();
+  updateUI(data);
+}
+
+function updateUI(data) {
+  // Rage
+  const rage = data.player.rage;
+  document.getElementById("rageVal").textContent = rage + " / 100";
+  document.getElementById("rageFill").style.width = rage + "%";
+  document.getElementById("rageFill").textContent = rage > 15 ? rage : "";
+
+  // Enrage buff
+  const enrageActive = data.player.enrageActive;
+  const enrageEl = document.getElementById("buffEnrage");
+  const enrageTimer = document.getElementById("enrageTimer");
+  enrageEl.className = "buff " + (enrageActive ? "active" : "inactive");
+  enrageTimer.textContent = enrageActive ? data.player.enrageRemainingSeconds.toFixed(1) + "s" : "—";
+  enrageTimer.className = "buff-timer" + (data.player.enrageRemainingSeconds <= 1.5 && enrageActive ? " low" : "");
+
+  // Recklessness buff
+  const reckActive = data.player.recklessnessActive;
+  document.getElementById("buffRecklessness").className = "buff " + (reckActive ? "active" : "inactive");
+  document.getElementById("reckTimer").textContent = reckActive ? data.player.recklessnessRemainingSeconds.toFixed(1) + "s" : "—";
+
+  // Sudden Death proc
+  document.getElementById("buffSuddenDeath").className = "buff " + (data.player.suddenDeathProcActive ? "active" : "inactive");
+
+  // Abilities
+  const rec = data.recommendation;
+  currentRec = rec ? rec.abilityName : "";
+
+  ABILITIES.forEach(name => {
+    const key = name.replace(/ /g, "_");
+    const btn = document.getElementById("btn_" + key);
+    const cdEl = document.getElementById("cd_" + key);
+    const chEl = document.getElementById("ch_" + key);
+    const a = data.abilities[name];
+    if (!a) return;
+
+    const isReady = a.ready;
+    const isRec = name === currentRec;
+
+    btn.className = "ability-btn" + (isRec ? " recommended" : "") + (!isReady ? " on-cooldown" : "");
+    cdEl.textContent = isReady ? "SPREMAN" : a.cooldownRemaining.toFixed(1) + "s";
+    cdEl.className = "ability-cd" + (isReady ? " ready" : "");
+    chEl.textContent = a.maxCharges > 1 ? a.chargesAvailable + "/" + a.maxCharges + " pun." : "";
+  });
+
+  // Recommendation box
+  if (rec) {
+    const box = document.getElementById("recBox");
+    document.getElementById("recAbility").textContent = rec.abilityName;
+    document.getElementById("recUrgency").textContent = rec.urgency;
+    document.getElementById("recUrgency").className = "rec-urgency urgency-" + rec.urgency;
+    document.getElementById("recReason").textContent = rec.reason;
+    box.className = "rec-box " + rec.urgency.toLowerCase();
+  }
+
+  // Warning
+  const warn = data.warning || "";
+  const warnBar = document.getElementById("warningBar");
+  warnBar.textContent = warn;
+  warnBar.className = "warning-bar" + (warn ? " visible" : "");
+}
+
+async function useAbility(name) {
+  const res = await fetch("/api/use-ability?name=" + encodeURIComponent(name), { method: "POST" });
+  const data = await res.json();
+  const errEl = document.getElementById("errorMsg");
+  if (data.result !== "OK") {
+    errEl.textContent = data.result;
+    setTimeout(() => errEl.textContent = "", 2500);
+  } else {
+    errEl.textContent = "";
+  }
+  fetchState();
+}
+
+async function reset() {
+  await fetch("/api/reset", { method: "POST" });
+  document.getElementById("targetHpSlider").value = 100;
+  document.getElementById("targetHpVal").textContent = "100%";
+  fetchState();
+}
+
+document.getElementById("targetHpSlider").addEventListener("input", async function() {
+  const hp = this.value;
+  document.getElementById("targetHpVal").textContent = hp + "%";
+  await fetch("/api/set-target-hp?hp=" + hp, { method: "POST" });
+  fetchState();
+});
+
+buildAbilityGrid();
+fetchState();
+setInterval(fetchState, 1000);
+</script>
+</body>
+</html>
