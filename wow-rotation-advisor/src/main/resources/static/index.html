@@ -3,173 +3,297 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WoW Rotation Advisor — Fury Warrior</title>
+<title>WoW Rotation Advisor</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0d0d0d; color: #e8d5a3; font-family: 'Segoe UI', sans-serif; min-height: 100vh; padding: 20px; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d0d0d; color: #e8d5a3; font-family: 'Segoe UI', sans-serif; min-height: 100vh; padding: 20px; }
 
-  h1 { text-align: center; color: #c69b3a; font-size: 1.6rem; letter-spacing: 2px; margin-bottom: 4px; text-transform: uppercase; }
-  .subtitle { text-align: center; color: #8a7040; font-size: 0.85rem; margin-bottom: 24px; }
+h1 { text-align: center; color: #c69b3a; font-size: 1.5rem; letter-spacing: 2px; margin-bottom: 4px; text-transform: uppercase; }
+.subtitle { text-align: center; color: #8a7040; font-size: 0.82rem; margin-bottom: 16px; }
 
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 900px; margin: 0 auto; }
-  .card { background: #1a1a1a; border: 1px solid #3a3020; border-radius: 8px; padding: 16px; }
-  .card h2 { color: #c69b3a; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #2a2010; padding-bottom: 6px; }
+.tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+.tab { padding: 8px 20px; border-radius: 6px; border: 2px solid #3a3020; background: #111; color: #8a7040;
+       cursor: pointer; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s; }
+.tab:hover { border-color: #8a7040; color: #c69b3a; }
+.tab.fw.active  { border-color: #ff6600; color: #ff8833; background: #1a0a00; }
+.tab.sr.active  { border-color: #aaee44; color: #ccff66; background: #0a1a00; }
+.tab.dh.active  { border-color: #cc44ff; color: #dd77ff; background: #12001a; }
 
-  /* Rage bar */
-  .rage-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; }
-  .rage-track { background: #111; border-radius: 4px; height: 28px; overflow: hidden; border: 1px solid #3a2010; }
-  .rage-fill { height: 100%; background: linear-gradient(90deg, #8b0000, #cc3300, #ff6600); border-radius: 4px; transition: width 0.4s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: bold; font-size: 0.85rem; color: #fff; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 920px; margin: 0 auto; }
+.card { background: #1a1a1a; border: 1px solid #3a3020; border-radius: 8px; padding: 14px; }
+.card h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+           border-bottom: 1px solid #2a2010; padding-bottom: 5px; color: #c69b3a; }
 
-  /* Buffs */
-  .buffs { display: flex; gap: 10px; flex-wrap: wrap; }
-  .buff { background: #111; border: 1px solid #4a3010; border-radius: 6px; padding: 8px 12px; text-align: center; min-width: 90px; }
-  .buff.active { border-color: #c69b3a; background: #1f1800; }
-  .buff.inactive { opacity: 0.35; }
-  .buff-name { font-size: 0.7rem; color: #8a7040; text-transform: uppercase; }
-  .buff-timer { font-size: 1.3rem; font-weight: bold; color: #ffc040; }
-  .buff-timer.low { color: #ff4040; }
+.res-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.88rem; }
+.res-track { background: #111; border-radius: 4px; height: 26px; overflow: hidden; border: 1px solid #3a2010; }
+.res-fill  { height: 100%; border-radius: 4px; transition: width 0.35s ease;
+             display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;
+             font-weight: bold; font-size: 0.82rem; color: #fff; }
 
-  /* Abilities */
-  .abilities { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .ability-btn { background: #111; border: 2px solid #3a2010; border-radius: 6px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s; position: relative; }
-  .ability-btn:hover { background: #1f1800; border-color: #c69b3a; }
-  .ability-btn.recommended { border-color: #00cc44; background: #001a0a; box-shadow: 0 0 12px rgba(0,204,68,0.3); animation: pulse 1.2s ease-in-out infinite; }
-  .ability-btn.on-cooldown { opacity: 0.45; cursor: not-allowed; }
-  .ability-btn.on-cooldown:hover { background: #111; border-color: #3a2010; }
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 8px rgba(0,204,68,0.3); } 50% { box-shadow: 0 0 20px rgba(0,204,68,0.6); } }
-  .ability-name { font-size: 0.85rem; font-weight: bold; color: #e8d5a3; }
-  .ability-cd { font-size: 0.75rem; color: #8a7040; margin-top: 2px; }
-  .ability-cd.ready { color: #00cc44; }
-  .ability-charges { font-size: 0.7rem; color: #6a8080; }
+.cp-row { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+.cp-label { font-size: 0.75rem; color: #8a7040; text-transform: uppercase; margin-right: 4px; }
+.cp-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #4a4030; background: #111; transition: all 0.2s; }
+.cp-dot.filled { background: #ffe066; border-color: #c8a800; box-shadow: 0 0 6px rgba(255,220,0,0.5); }
 
-  /* Recommendation */
-  .recommendation { grid-column: 1 / -1; }
-  .rec-box { background: #001a0a; border: 2px solid #00cc44; border-radius: 8px; padding: 16px; text-align: center; }
-  .rec-box.high { border-color: #ff6600; background: #1a0a00; }
-  .rec-box.medium { border-color: #ccaa00; background: #1a1500; }
-  .rec-box.low { border-color: #4a6a4a; background: #0a1a0a; }
-  .rec-ability { font-size: 1.6rem; font-weight: bold; color: #ffffff; margin-bottom: 4px; }
-  .rec-urgency { font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
-  .urgency-HIGH { color: #ff6600; }
-  .urgency-MEDIUM { color: #ccaa00; }
-  .urgency-LOW { color: #4a8a4a; }
-  .rec-reason { font-size: 0.82rem; color: #a09070; }
+.dot-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 0.82rem; }
+.dot-label { color: #8a7040; text-transform: uppercase; font-size: 0.7rem; }
+.dot-bar-wrap { flex: 1; background: #111; border-radius: 3px; height: 10px; border: 1px solid #3a2010; }
+.dot-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#6a0000,#cc2200); transition: width 0.4s; }
+.dot-timer { min-width: 38px; text-align: right; color: #ff8844; }
+.dot-timer.pandemic { color: #ff2200; font-weight: bold; }
 
-  /* Warning */
-  .warning-bar { grid-column: 1 / -1; background: #2a0000; border: 1px solid #880000; border-radius: 6px; padding: 10px 16px; color: #ff4040; font-size: 0.85rem; text-align: center; display: none; }
-  .warning-bar.visible { display: block; }
+.buffs { display: flex; gap: 8px; flex-wrap: wrap; }
+.buff { background: #111; border: 1px solid #4a3010; border-radius: 6px; padding: 7px 10px;
+        text-align: center; min-width: 84px; }
+.buff.active { border-color: #c69b3a; background: #1f1800; }
+.buff.inactive { opacity: 0.3; }
+.buff-name  { font-size: 0.65rem; color: #8a7040; text-transform: uppercase; }
+.buff-timer { font-size: 1.2rem; font-weight: bold; color: #ffc040; }
+.buff-timer.low { color: #ff4040; }
 
-  /* Target HP */
-  .target-hp { display: flex; align-items: center; gap: 10px; }
-  .target-hp input[type=range] { flex: 1; accent-color: #cc3300; }
-  .target-hp span { min-width: 45px; text-align: right; font-weight: bold; }
+.abilities { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+.ability-btn { background: #111; border: 2px solid #3a2010; border-radius: 6px; padding: 9px 6px;
+               cursor: pointer; text-align: center; transition: all 0.15s; }
+.ability-btn:hover { background: #1f1800; border-color: #c69b3a; }
+.ability-btn.recommended { border-color: #00cc44; background: #001a0a; animation: pulse 1.2s ease-in-out infinite; }
+.ability-btn.on-cooldown  { opacity: 0.4; cursor: not-allowed; }
+.ability-btn.on-cooldown:hover { background: #111; border-color: #3a2010; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 8px rgba(0,204,68,0.3); } 50% { box-shadow: 0 0 20px rgba(0,204,68,0.6); } }
+.ability-name   { font-size: 0.8rem; font-weight: bold; color: #e8d5a3; }
+.ability-cd     { font-size: 0.7rem; color: #8a7040; margin-top: 2px; }
+.ability-cd.ready { color: #00cc44; }
+.ability-charges { font-size: 0.65rem; color: #6a8080; }
+.ability-cost   { font-size: 0.62rem; color: #5a5040; margin-top: 3px; }
 
-  /* Reset button */
-  .reset-btn { display: block; margin: 16px auto 0; background: #2a1500; border: 1px solid #c69b3a; color: #c69b3a; padding: 8px 24px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
-  .reset-btn:hover { background: #3a2500; }
+.recommendation { grid-column: 1 / -1; }
+.rec-box { border: 2px solid #00cc44; border-radius: 8px; padding: 14px; text-align: center; background: #001a0a; }
+.rec-box.HIGH   { border-color: #ff6600; background: #1a0a00; }
+.rec-box.MEDIUM { border-color: #ccaa00; background: #1a1500; }
+.rec-box.LOW    { border-color: #4a6a4a; background: #0a1a0a; } .rec-ability { font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 3px; } .rec-urgency { font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; } .urgency-HIGH   { color: #ff6600; } .urgency-MEDIUM { color: #ccaa00; } .urgency-LOW    { color: #4a8a4a; } .rec-reason { font-size: 0.8rem; color: #a09070; }
+.rec-chain { font-size: 0.72rem; color: #6a8060; margin-top: 7px; border-top: 1px solid #2a3020; padding-top: 5px; display: none; }
+.rec-chain-label { color: #5a6a50; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 1px; margin-right: 5px; }
 
-  .error-msg { color: #ff4040; font-size: 0.8rem; text-align: center; margin-top: 8px; min-height: 20px; }
+.ability-btn { position: relative; }
+.ability-tooltip {
+    display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #111; border: 1px solid #5a4a20; border-radius: 6px;
+    padding: 8px 10px; width: 210px; font-size: 0.7rem; color: #c8b880;
+    z-index: 200; pointer-events: none; text-align: left; line-height: 1.45;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+}
+.ability-btn:hover .ability-tooltip { display: block; }
+
+.warning-bar { grid-column: 1 / -1; background: #2a0000; border: 1px solid #880000; border-radius: 6px;
+               padding: 9px 14px; color: #ff4040; font-size: 0.83rem; text-align: center; display: none; }
+.warning-bar.visible { display: block; }
+
+.target-hp { display: flex; align-items: center; gap: 10px; }
+.target-hp input[type=range] { flex: 1; accent-color: #cc3300; }
+.target-hp span { min-width: 45px; text-align: right; font-weight: bold; }
+
+.reset-btn { display: block; margin: 14px auto 0; background: #2a1500; border: 1px solid #c69b3a;
+             color: #c69b3a; padding: 7px 22px; border-radius: 6px; cursor: pointer;
+             font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1px; }
+.reset-btn:hover { background: #3a2500; }
+.error-msg { color: #ff4040; font-size: 0.78rem; text-align: center; margin-top: 7px; min-height: 18px; }
 </style>
 </head>
 <body>
 
 <h1>WoW Rotation Advisor</h1>
-<p class="subtitle">Fury Warrior · Dragonflight 10.1–10.2 · Drools Rule Engine</p>
+<p class="subtitle">Dragonflight 10.1–10.2 · Drools Rule Engine</p>
+
+<div class="tabs">
+  <div class="tab fw" onclick="switchSpec('FURY_WARRIOR')">Fury Warrior</div>
+  <div class="tab sr" onclick="switchSpec('SUBTLETY_ROGUE')">Subtlety Rogue</div>
+  <div class="tab dh" onclick="switchSpec('HAVOC_DH')">Havoc DH</div>
+</div>
 
 <div class="grid">
-
-  <!-- Warning -->
   <div class="warning-bar" id="warningBar"></div>
 
-  <!-- Recommendation -->
   <div class="card recommendation">
     <h2>Preporucena akcija</h2>
     <div class="rec-box" id="recBox">
       <div class="rec-ability" id="recAbility">—</div>
       <div class="rec-urgency" id="recUrgency"></div>
-      <div class="rec-reason" id="recReason"></div>
+      <div class="rec-reason"  id="recReason"></div>
+      <div class="rec-chain"   id="recChain">
+        <span class="rec-chain-label">Setup:</span>
+        <span id="recChainText"></span>
+      </div>
     </div>
   </div>
 
-  <!-- Resources -->
   <div class="card">
     <h2>Resursi</h2>
-    <div class="rage-label">
-      <span>Rage</span>
-      <span id="rageVal">0 / 100</span>
+    <div class="res-label">
+      <span id="resLabel">Rage</span>
+      <span id="resVal">0 / 100</span>
     </div>
-    <div class="rage-track">
-      <div class="rage-fill" id="rageFill" style="width:0%"></div>
+    <div class="res-track">
+      <div class="res-fill" id="resFill" style="width:0%;background:linear-gradient(90deg,#8b0000,#cc3300,#ff6600)"></div>
+    </div>
+    <div class="cp-row" id="cpRow" style="display:none">
+      <span class="cp-label">CP</span>
+      <div class="cp-dot" id="cp1"></div><div class="cp-dot" id="cp2"></div>
+      <div class="cp-dot" id="cp3"></div><div class="cp-dot" id="cp4"></div>
+      <div class="cp-dot" id="cp5"></div><div class="cp-dot" id="cp6"></div>
+      <div class="cp-dot" id="cp7"></div>
+    </div>
+    <div class="dot-row" id="ruptureRow" style="display:none">
+      <span class="dot-label">Rupture</span>
+      <div class="dot-bar-wrap"><div class="dot-bar" id="ruptureBar" style="width:0%"></div></div>
+      <span class="dot-timer" id="ruptureTimer">—</span>
     </div>
   </div>
 
-  <!-- Buffs -->
   <div class="card">
     <h2>Aktivni efekti</h2>
-    <div class="buffs">
-      <div class="buff inactive" id="buffEnrage">
-        <div class="buff-name">Enrage</div>
-        <div class="buff-timer" id="enrageTimer">—</div>
-      </div>
-      <div class="buff inactive" id="buffRecklessness">
-        <div class="buff-name">Recklessness</div>
-        <div class="buff-timer" id="reckTimer">—</div>
-      </div>
-      <div class="buff inactive" id="buffSuddenDeath">
-        <div class="buff-name">Sudden Death</div>
-        <div class="buff-timer">PROC</div>
-      </div>
-    </div>
+    <div class="buffs" id="buffsContainer"></div>
   </div>
 
-  <!-- Abilities -->
   <div class="card" style="grid-column: 1 / -1">
     <h2>Sposobnosti (klikni da koristis)</h2>
     <div class="abilities" id="abilitiesGrid"></div>
     <div class="error-msg" id="errorMsg"></div>
   </div>
 
-  <!-- Target HP -->
   <div class="card" style="grid-column: 1 / -1">
     <h2>Zdravlje protivnika</h2>
     <div class="target-hp">
       <input type="range" id="targetHpSlider" min="0" max="100" value="100" step="1">
       <span id="targetHpVal">100%</span>
     </div>
-    <div style="font-size:0.75rem;color:#6a6040;margin-top:6px;">
-      Spusti ispod 20% da aktiviras Execute fazu
-    </div>
+    <div style="font-size:0.72rem;color:#6a6040;margin-top:5px;">Spusti ispod 20% za Execute fazu (Fury Warrior)</div>
   </div>
-
 </div>
 
 <button class="reset-btn" onclick="reset()">Resetuj borbu</button>
 
 <script>
-const ABILITIES = ["Bloodthirst", "Raging Blow", "Rampage", "Execute", "Recklessness"];
-const ABILITY_INFO = {
-  "Bloodthirst":  { cost: "0 Rage", gen: "+8 Rage, 30% Enrage" },
-  "Raging Blow":  { cost: "0 Rage", gen: "+12 Rage, 2 pun." },
-  "Rampage":      { cost: "80 Rage", gen: "Uvek Enrage (4s)" },
-  "Execute":      { cost: "25 Rage", gen: "+40 Rage, <20% HP / SD" },
-  "Recklessness": { cost: "0",      gen: "+50% Rage gen, 12s" }
+const SPEC_CONFIG = {
+  FURY_WARRIOR: {
+    resourceLabel: "Rage", maxResource: 100,
+    gradient: "linear-gradient(90deg,#8b0000,#cc3300,#ff6600)",
+    abilities: ["Bloodthirst","Raging Blow","Rampage","Execute","Recklessness","Odyn's Fury"],
+    costs: { "Bloodthirst":"0 Rage · +8R","Raging Blow":"0 Rage · +12R",
+             "Rampage":"80 Rage · Enrage","Execute":"25 Rage · <20%/SD","Recklessness":"0 · 12s buff",
+             "Odyn's Fury":"0 · 60s CD · AoE burst" },
+    descriptions: {
+      "Bloodthirst":  "Brzi udarac koji generiše +8 Rage i ima 30% šansu da aktivira Enrage — ključni buff za rotaciju. Primarni izvor Enrage-a.",
+      "Raging Blow":  "Dvostruki udarac koji generiše +12 Rage. Ima 2 punjenja — trosite oba da ne ostanete bez punjenja.",
+      "Rampage":      "Serija od 4 napada. Troši 80 Rage, GARANTOVANO aktivira Enrage 4s. Koristiti kad imate 80+ Rage ili kad Enrage isce.",
+      "Execute":      "Smrtonosni udarac za neprijatelje ispod 20% HP-a. Takodje besplatan uz Sudden Death (žuti proc). Prioritet u execute fazi.",
+      "Recklessness": "12s buff koji ubrzava generisanje Rage-a i pojacava sve napade. Aktivirajte kad ste pod Enrage-om za max sinergiju.",
+      "Odyn's Fury":  "AoE burst CD (60s). Nanosi visoku štetu svim neprijateljima oko vas. Idealno tokom Recklessness prozora."
+    },
+    buffs: [
+      { key:"enrage",       label:"Enrage",       timerKey:"enrageRemainingSeconds",       activeKey:"enrageActive" },
+      { key:"recklessness", label:"Recklessness",  timerKey:"recklessnessRemainingSeconds", activeKey:"recklessnessActive" },
+      { key:"suddenDeath",  label:"Sudden Death",  timerKey:null,                           activeKey:"suddenDeathProcActive" }
+    ]
+  },
+  SUBTLETY_ROGUE: {
+    resourceLabel: "Energy", maxResource: 100,
+    gradient: "linear-gradient(90deg,#1a3a00,#4a8a00,#aaee44)",
+    abilities: ["Shadowstrike","Backstab","Eviscerate","Rupture","Slice and Dice","Shadow Dance","Symbols of Death","Flagellation","Secret Technique"],
+    costs: { "Shadowstrike":"40E · +2CP (Dance)","Backstab":"35E · +2CP",
+             "Eviscerate":"35E · Troši CP","Rupture":"25E · 5+CP DoT",
+             "Slice and Dice":"25E · 5+CP · (6+CP×2)s","Shadow Dance":"0 · Stealth 8s",
+             "Symbols of Death":"0 · 34s buff","Flagellation":"0 · 30s CD · 12s",
+             "Secret Technique":"0 · 45s CD (Dance)" },
+    descriptions: {
+      "Shadowstrike":     "Napad iz skrivanja koji gradi +2 Combo Poena. ZAHTEVA Shadow Dance (stealth). Jaci od Backstab-a — graditi CP uvek ovim unutar Dance prozora.",
+      "Backstab":         "Standardni udarac koji gradi +2 Combo Poena. Koristiti VAN stealth prozora kad treba graditi CP.",
+      "Eviscerate":       "Finisher — troši SVE Combo Poene za jak udarac. Koristiti sa 5–7 CP, po mogucnosti unutar Shadow Dance-a.",
+      "Rupture":          "Finisher koji postavlja krvarenje (DoT) na neprijatelja. Zahteva 5+ CP. Trajanje = (8+CP×2)s. Obnovite unutar 4.2s pre isteka (pandemic prozor).",
+      "Slice and Dice":   "Maintenance buff koji se UVEK mora odrzavati. Finisher (5+ CP, 25E). Trajanje = (6+CP×2)s. Najvisi prioritet u rotaciji — bez njega gubite znacajnu stetu.",
+      "Shadow Dance":     "Ulazak u stealth na 8s. Omogucava Shadowstrike i Secret Technique. Ima 2 punjenja. Koristiti POSLE Symbols of Death za max stetu.",
+      "Symbols of Death": "34s buff koji pojacava sve napade. Uvek aktivirati PRE Shadow Dance-a. Reinicijalizuje se svake 38s.",
+      "Flagellation":     "Burst CD (30s). Aplicira debuff na neprijatelju. Svaki finisher tokom 12s dodaje 1 stack (max 30) — svaki stack pojacava finishere za 6%. Aktivirati pre Dance-a.",
+      "Secret Technique": "Sekundarni burst CD (45s) bez ikakvih troskova. Koristiti ODMAH unutar Shadow Dance prozora za max stetu."
+    },
+    buffs: [
+      { key:"shadowDance",    label:"Shadow Dance",     timerKey:"shadowDanceRemainingSeconds",    activeKey:"shadowDanceActive" },
+      { key:"symbolsOfDeath", label:"Symbols of Death", timerKey:"symbolsOfDeathRemainingSeconds", activeKey:"symbolsOfDeathActive" },
+      { key:"sliceAndDice",   label:"Slice & Dice",     timerKey:"sliceAndDiceRemainingSeconds",   activeKey:"sliceAndDiceActive" },
+      { key:"flagellation",   label:"Flagellation",     timerKey:"flagellationRemainingSeconds",   activeKey:"flagellationActive", stacksKey:"flagellationStacks" }
+    ]
+  },
+  HAVOC_DH: {
+    resourceLabel: "Fury", maxResource: 120,
+    gradient: "linear-gradient(90deg,#4a0080,#8800cc,#cc44ff)",
+    abilities: ["Demon's Bite","Chaos Strike","Blade Dance","Eye Beam","Essence Break","Metamorphosis","Immolation Aura","Felblade"],
+    costs: { "Demon's Bite":"0 · +20F","Chaos Strike":"40F · 20% refund",
+             "Blade Dance":"35F · 9s CD · Death Sweep u Meta","Eye Beam":"30F · Demonic 6s · 30s CD",
+             "Essence Break":"0 · 15s CD · +40% dmg 4s","Metamorphosis":"0 · 3min CD · 30s",
+             "Immolation Aura":"0 · +8F/s · 30s CD","Felblade":"0 · +20F · 2 pun." },
+    descriptions: {
+      "Demon's Bite":    "Brzi napad koji generiše +20 Fury bez troška. Apsolutni filler — koristite SAMO kad su svi CD-ovi na hladjenju.",
+      "Chaos Strike":    "Standardni napad (40 Fury). Ima 20% šansu da vrati 20 Fury (Chaos Cleave proc). Postaje Annihilation tokom Metamorphosisa — isti napad, duplo jaci.",
+      "Blade Dance":     "Serija napada (35 Fury, 9s CD) koja pogadja sve neprijatelje. Tokom Metamorphosisa postaje Death Sweep — znatno mocniji. Idealan unutar Essence Break prozora.",
+      "Eye Beam":        "Mocan laserski napad (30 Fury, 30s CD) koji aktivira Demonic buff na 6s — privremeni mini-Metamorphosis. Koristiti kad je Metamorphosis aktivan za sinergiju.",
+      "Essence Break":   "Aplicira debuff koji pojacava SVE vase sledece napade za 40% tokom 4s. UVEK aktivirati neposredno pre Blade Dance / Chaos Strike za max stetu.",
+      "Metamorphosis":   "Transformacija u demona na 30s (3min CD). Sve sposobnosti postaju jace, Blade Dance postaje Death Sweep. Aktivirati kad su Eye Beam i Essence Break dostupni.",
+      "Immolation Aura": "Aktivna aura (30s CD) koja AUTOMATSKI generiše +8 Fury/s tokom 6s (+48 ukupno). Uvek aktivirati cim je dostupna.",
+      "Felblade":        "Gap closer + generator Fury-ja (+20). Ima 2 punjenja (30s hladjenje po punjenju). Koristiti kao filler kad nema urgentnih CD-ova."
+    },
+    buffs: [
+      { key:"metamorphosis",  label:"Metamorphosis",   timerKey:"metamorphosisRemainingSeconds",  activeKey:"metamorphosisActive" },
+      { key:"essenceBreak",   label:"Essence Break",   timerKey:"essenceBreakRemainingSeconds",   activeKey:"essenceBreakActive" },
+      { key:"demonic",        label:"Demonic",          timerKey:"demonicRemainingSeconds",         activeKey:"demonicActive" },
+      { key:"immolationAura", label:"Immolation Aura",  timerKey:"immolationAuraRemainingSeconds",  activeKey:"immolationAuraActive" }
+    ]
+  }
 };
 
-let currentRec = "";
+let currentSpec = "FURY_WARRIOR";
 
-function buildAbilityGrid() {
+function switchSpec(spec) {
+  fetch("/api/set-spec?spec=" + spec, { method:"POST" }).then(() => {
+    currentSpec = spec;
+    rebuildUI();
+    fetchState();
+  });
+}
+
+function rebuildUI() {
+  const cfg = SPEC_CONFIG[currentSpec];
+  const tabMap = { FURY_WARRIOR:"fw", SUBTLETY_ROGUE:"sr", HAVOC_DH:"dh" };
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelector(".tab." + tabMap[currentSpec]).classList.add("active");
+
+  document.getElementById("resLabel").textContent = cfg.resourceLabel;
+  document.getElementById("resFill").style.background = cfg.gradient;
+
+  document.getElementById("cpRow").style.display      = currentSpec === "SUBTLETY_ROGUE" ? "flex" : "none";
+  document.getElementById("ruptureRow").style.display = currentSpec === "SUBTLETY_ROGUE" ? "flex" : "none";
+
+  const bc = document.getElementById("buffsContainer");
+  bc.innerHTML = "";
+  cfg.buffs.forEach(b => {
+    const el = document.createElement("div");
+    el.className = "buff inactive";
+    el.id = "buff_" + b.key;
+    el.innerHTML = `<div class="buff-name">${b.label}</div>
+      <div class="buff-timer" id="timer_${b.key}">${b.timerKey ? "—" : "PROC"}</div>`;
+    bc.appendChild(el);
+  });
+
   const grid = document.getElementById("abilitiesGrid");
   grid.innerHTML = "";
-  ABILITIES.forEach(name => {
-    const btn = document.createElement("div");
+  cfg.abilities.forEach(name => {
+    const key  = name.replace(/ /g,"_");
+    const desc = (cfg.descriptions && cfg.descriptions[name]) ? cfg.descriptions[name] : "";
+    const btn  = document.createElement("div");
     btn.className = "ability-btn";
-    btn.id = "btn_" + name.replace(/ /g, "_");
-    btn.innerHTML = `
-      <div class="ability-name">${name}</div>
-      <div class="ability-cd" id="cd_${name.replace(/ /g,'_')}">—</div>
-      <div class="ability-charges" id="ch_${name.replace(/ /g,'_')}"></div>
-      <div style="font-size:0.68rem;color:#5a5040;margin-top:3px">${ABILITY_INFO[name].cost} · ${ABILITY_INFO[name].gen}</div>
-    `;
+    btn.id = "btn_" + key;
+    btn.innerHTML = `<div class="ability-name">${name}</div>
+      <div class="ability-cd ready" id="cd_${key}">SPREMAN</div>
+      <div class="ability-charges" id="ch_${key}"></div>
+      <div class="ability-cost">${cfg.costs[name] || ""}</div>
+      ${desc ? `<div class="ability-tooltip">${desc}</div>` : ""}`;
     btn.onclick = () => useAbility(name);
     grid.appendChild(btn);
   });
@@ -178,85 +302,103 @@ function buildAbilityGrid() {
 async function fetchState() {
   const res = await fetch("/api/state");
   const data = await res.json();
+  if (data.spec !== currentSpec) { currentSpec = data.spec; rebuildUI(); }
   updateUI(data);
 }
 
 function updateUI(data) {
-  // Rage
-  const rage = data.player.rage;
-  document.getElementById("rageVal").textContent = rage + " / 100";
-  document.getElementById("rageFill").style.width = rage + "%";
-  document.getElementById("rageFill").textContent = rage > 15 ? rage : "";
+  const cfg = SPEC_CONFIG[currentSpec];
+  const player = data.player;
 
-  // Enrage buff
-  const enrageActive = data.player.enrageActive;
-  const enrageEl = document.getElementById("buffEnrage");
-  const enrageTimer = document.getElementById("enrageTimer");
-  enrageEl.className = "buff " + (enrageActive ? "active" : "inactive");
-  enrageTimer.textContent = enrageActive ? data.player.enrageRemainingSeconds.toFixed(1) + "s" : "—";
-  enrageTimer.className = "buff-timer" + (data.player.enrageRemainingSeconds <= 1.5 && enrageActive ? " low" : "");
+  const res  = player.primaryResource;
+  const pct  = Math.min(100, (res / cfg.maxResource) * 100);
+  document.getElementById("resVal").textContent = res + " / " + cfg.maxResource;
+  document.getElementById("resFill").style.width = pct + "%";
+  document.getElementById("resFill").textContent = pct > 12 ? res : "";
 
-  // Recklessness buff
-  const reckActive = data.player.recklessnessActive;
-  document.getElementById("buffRecklessness").className = "buff " + (reckActive ? "active" : "inactive");
-  document.getElementById("reckTimer").textContent = reckActive ? data.player.recklessnessRemainingSeconds.toFixed(1) + "s" : "—";
+  if (currentSpec === "SUBTLETY_ROGUE") {
+    const cp = player.comboPoints || 0;
+    for (let i = 1; i <= 7; i++)
+      document.getElementById("cp" + i).className = "cp-dot" + (i <= cp ? " filled" : "");
+    const dot = data.dots && data.dots["Rupture"];
+    if (dot) {
+      document.getElementById("ruptureBar").style.width =
+        dot.active ? Math.min(100, (dot.remainingSeconds / 22) * 100) + "%" : "0%";
+      const t = document.getElementById("ruptureTimer");
+      t.textContent = dot.active ? dot.remainingSeconds.toFixed(1) + "s" : "—";
+      t.className   = "dot-timer" + (dot.needsRefresh ? " pandemic" : "");
+    }
+  }
 
-  // Sudden Death proc
-  document.getElementById("buffSuddenDeath").className = "buff " + (data.player.suddenDeathProcActive ? "active" : "inactive");
+  cfg.buffs.forEach(b => {
+    const active = !!player[b.activeKey];
+    document.getElementById("buff_" + b.key).className = "buff " + (active ? "active" : "inactive");
+    if (b.timerKey) {
+      const rem    = player[b.timerKey] || 0;
+      const el     = document.getElementById("timer_" + b.key);
+      const stacks = b.stacksKey != null ? (player[b.stacksKey] || 0) : null;
+      const suffix = (stacks !== null && active) ? " (" + stacks + "\xd7)" : "";
+      el.textContent = active ? rem.toFixed(1) + "s" + suffix : "—";
+      el.className   = "buff-timer" + (active && rem <= 1.5 ? " low" : "");
+    }
+  });
 
-  // Abilities
-  const rec = data.recommendation;
-  currentRec = rec ? rec.abilityName : "";
-
-  ABILITIES.forEach(name => {
-    const key = name.replace(/ /g, "_");
+  const recName = data.recommendation ? data.recommendation.abilityName : "";
+  cfg.abilities.forEach(name => {
+    const key = name.replace(/ /g,"_");
     const btn = document.getElementById("btn_" + key);
     const cdEl = document.getElementById("cd_" + key);
     const chEl = document.getElementById("ch_" + key);
     const a = data.abilities[name];
-    if (!a) return;
-
-    const isReady = a.ready;
-    const isRec = name === currentRec;
-
-    btn.className = "ability-btn" + (isRec ? " recommended" : "") + (!isReady ? " on-cooldown" : "");
-    cdEl.textContent = isReady ? "SPREMAN" : a.cooldownRemaining.toFixed(1) + "s";
-    cdEl.className = "ability-cd" + (isReady ? " ready" : "");
+    if (!a || !btn) return;
+    btn.className  = "ability-btn" + (name === recName ? " recommended" : "") + (!a.ready ? " on-cooldown" : "");
+    const recharging = a.maxCharges > 1 && a.cooldownRemaining > 0 && a.chargesAvailable < a.maxCharges;
+    cdEl.textContent = !a.ready ? a.cooldownRemaining.toFixed(1) + "s"
+                     : recharging ? "↺ " + a.cooldownRemaining.toFixed(1) + "s"
+                     : "SPREMAN";
+    cdEl.className   = "ability-cd" + (a.ready ? " ready" : "");
     chEl.textContent = a.maxCharges > 1 ? a.chargesAvailable + "/" + a.maxCharges + " pun." : "";
   });
 
-  // Recommendation box
-  if (rec) {
-    const box = document.getElementById("recBox");
+  if (data.recommendation) {
+    const rec = data.recommendation;
     document.getElementById("recAbility").textContent = rec.abilityName;
-    document.getElementById("recUrgency").textContent = rec.urgency;
-    document.getElementById("recUrgency").className = "rec-urgency urgency-" + rec.urgency;
+    const u = document.getElementById("recUrgency");
+    u.textContent = rec.urgency;
+    u.className   = "rec-urgency urgency-" + rec.urgency;
     document.getElementById("recReason").textContent = rec.reason;
-    box.className = "rec-box " + rec.urgency.toLowerCase();
+    document.getElementById("recBox").className = "rec-box " + rec.urgency;
+
+    const chain    = data.prereqChain || [];
+    const chainDiv = document.getElementById("recChain");
+    if (chain.length > 0) {
+      document.getElementById("recChainText").textContent =
+        [...chain, rec.abilityName].join(" → ");
+      chainDiv.style.display = "block";
+    } else {
+      chainDiv.style.display = "none";
+    }
   }
 
-  // Warning
   const warn = data.warning || "";
-  const warnBar = document.getElementById("warningBar");
-  warnBar.textContent = warn;
-  warnBar.className = "warning-bar" + (warn ? " visible" : "");
+  const wb = document.getElementById("warningBar");
+  wb.textContent = warn;
+  wb.className   = "warning-bar" + (warn ? " visible" : "");
 }
 
 async function useAbility(name) {
-  const res = await fetch("/api/use-ability?name=" + encodeURIComponent(name), { method: "POST" });
+  const res  = await fetch("/api/use-ability?name=" + encodeURIComponent(name), { method:"POST" });
   const data = await res.json();
   const errEl = document.getElementById("errorMsg");
   if (data.result !== "OK") {
     errEl.textContent = data.result;
     setTimeout(() => errEl.textContent = "", 2500);
-  } else {
-    errEl.textContent = "";
-  }
+  } else errEl.textContent = "";
   fetchState();
 }
 
 async function reset() {
-  await fetch("/api/reset", { method: "POST" });
+  await fetch("/api/reset", { method:"POST" });
   document.getElementById("targetHpSlider").value = 100;
   document.getElementById("targetHpVal").textContent = "100%";
   fetchState();
@@ -265,11 +407,11 @@ async function reset() {
 document.getElementById("targetHpSlider").addEventListener("input", async function() {
   const hp = this.value;
   document.getElementById("targetHpVal").textContent = hp + "%";
-  await fetch("/api/set-target-hp?hp=" + hp, { method: "POST" });
+  await fetch("/api/set-target-hp?hp=" + hp, { method:"POST" });
   fetchState();
 });
 
-buildAbilityGrid();
+rebuildUI();
 fetchState();
 setInterval(fetchState, 1000);
 </script>

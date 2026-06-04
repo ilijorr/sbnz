@@ -1,0 +1,27 @@
+package rules;
+
+import com.faks.sbnz.wow_rotation_advisor.facts.Prerequisite;
+import com.faks.sbnz.wow_rotation_advisor.facts.PrereqChain;
+
+query "directPrereq"(String ability, String prereq)
+    Prerequisite(abilityName == ability, prereqName == prereq)
+end
+
+rule "BC-PrereqChain-Direct"
+    salience 200
+when
+    Prerequisite($a: abilityName, $p: prereqName)
+    not PrereqChain(fromAbility == $a, toAbility == $p)
+then
+    insert(new PrereqChain($a, $p, 1));
+end
+
+rule "BC-PrereqChain-Transitive"
+    salience 190
+when
+    PrereqChain($a: fromAbility, $mid: toAbility, $d: depth)
+    Prerequisite(abilityName == $mid, $p: prereqName)
+    not PrereqChain(fromAbility == $a, toAbility == $p)
+then
+    insert(new PrereqChain($a, $p, $d + 1));
+end

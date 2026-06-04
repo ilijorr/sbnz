@@ -1,0 +1,293 @@
+package rules;
+
+import com.faks.sbnz.wow_rotation_advisor.model.SubtletyRogueState;
+import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
+import com.faks.sbnz.wow_rotation_advisor.model.DotState;
+import com.faks.sbnz.wow_rotation_advisor.facts.*;
+
+rule "SR-L1-StealthWindowActive"
+when
+    SubtletyRogueState(shadowDanceActive == true, shadowDanceRemainingSeconds > 0)
+then
+    insert(new StealthWindowActive());
+end
+
+rule "SR-L1-ShadowDanceAvailable"
+when
+    SubtletyRogueState()
+    AbilityState(name == "Shadow Dance", chargesAvailable > 0)
+    not StealthWindowActive()
+then
+    insert(new ShadowDanceAvailable());
+end
+
+rule "SR-L1-FinisherReady"
+when
+    SubtletyRogueState(comboPoints >= 5)
+then
+    insert(new FinisherReady());
+end
+
+rule "SR-L1-RuptureRefreshNeeded"
+when
+    SubtletyRogueState()
+    DotState(name == "Rupture", needsRefresh == true || active == false)
+then
+    insert(new RuptureRefreshNeeded());
+end
+
+rule "SR-L1-SymbolsReady"
+when
+    SubtletyRogueState()
+    AbilityState(name == "Symbols of Death", cooldownRemaining == 0.0)
+then
+    insert(new SymbolsReady());
+end
+
+rule "SR-L1-SymbolsActive"
+when
+    SubtletyRogueState(symbolsOfDeathActive == true)
+then
+    insert(new SymbolsActive());
+end
+
+rule "SR-L1-SymbolsAlmostReady"
+when
+    SubtletyRogueState()
+    AbilityState(name == "Symbols of Death", cooldownRemaining > 0.0, cooldownRemaining <= 3.0)
+then
+    insert(new SymbolsAlmostReady());
+end
+
+rule "SR-L1-SliceAndDiceRefreshNeeded"
+when
+    SubtletyRogueState(sliceAndDiceActive == false || sliceAndDiceRemainingSeconds <= 2.0)
+then
+    insert(new SliceAndDiceRefreshNeeded());
+end
+
+rule "SR-L1-FlagellationReady"
+when
+    SubtletyRogueState()
+    AbilityState(name == "Flagellation", cooldownRemaining == 0.0)
+then
+    insert(new FlagellationReady());
+end
+
+rule "SR-L1-FlagellationActive"
+when
+    SubtletyRogueState(flagellationActive == true)
+then
+    insert(new FlagellationActive());
+end
+
+rule "SR-L1-SecretTechniqueReady"
+when
+    SubtletyRogueState()
+    AbilityState(name == "Secret Technique", cooldownRemaining == 0.0)
+then
+    insert(new SecretTechniqueReady());
+end
+
+rule "SR-L2-ActivateDance"
+when
+    ShadowDanceAvailable()
+    SymbolsActive()
+then
+    insert(new ActivateDance());
+end
+
+rule "SR-L2-SpendCPInDance"
+when
+    StealthWindowActive()
+    FinisherReady()
+then
+    insert(new SpendCPInDance());
+end
+
+rule "SR-L2-PrioritizeRupture"
+when
+    RuptureRefreshNeeded()
+    FinisherReady()
+then
+    insert(new PrioritizeRupture());
+end
+
+rule "SR-L3-Slice-and-Dice-Emergency" salience 135
+when
+    SubtletyRogueState(sliceAndDiceActive == false, $cp: comboPoints, comboPoints >= 2, comboPoints < 5, primaryResource >= 25)
+then
+    insert(new Recommendation("Slice and Dice", 135, "HIGH",
+        "SnD istekao — ne cekaj 5 CP, osvezi odmah sa " + $cp + " CP (" + (6 + $cp * 2) + "s trajanje)"));
+end
+
+rule "SR-L3-Slice-and-Dice" salience 130
+when
+    SliceAndDiceRefreshNeeded()
+    FinisherReady()
+    SubtletyRogueState(primaryResource >= 25)
+then
+    insert(new Recommendation("Slice and Dice", 130, "HIGH", "Slice and Dice — obnovi maintenance buff odmah"));
+end
+
+rule "SR-L3-Rupture-Priority" salience 120
+when
+    PrioritizeRupture()
+    SubtletyRogueState(primaryResource >= 25)
+then
+    insert(new Recommendation("Rupture", 120, "HIGH", "Rupture pandemic — obnovi DoT odmah"));
+end
+
+rule "SR-L3-Flagellation" salience 110
+when
+    FlagellationReady()
+    not StealthWindowActive()
+then
+    insert(new Recommendation("Flagellation", 110, "HIGH", "Flagellation dostupan — primeni pre burst prozora"));
+end
+
+rule "SR-L3-Symbols-of-Death" salience 100
+when
+    SymbolsReady()
+    not StealthWindowActive()
+then
+    insert(new Recommendation("Symbols of Death", 100, "HIGH", "Aktiviraj Symbols of Death pre Dance-a"));
+end
+
+rule "SR-L3-ActivateDance" salience 95
+when
+    ActivateDance()
+    SubtletyRogueState(primaryResource >= 30)
+then
+    insert(new Recommendation("Shadow Dance", 95, "HIGH", "Symbols aktivan — otvori Shadow Dance za max burst"));
+end
+
+rule "SR-L3-ActivateDance-WaitEnergy" salience 93
+when
+    ActivateDance()
+    SubtletyRogueState($e: primaryResource, primaryResource < 30)
+then
+    insert(new Recommendation("Shadow Dance", 93, "MEDIUM",
+        "Cekaj energiju pre Dance-a (" + $e + "/30E) — ulazak sa premalo E traci stealth prozor"));
+end
+
+rule "SR-L3-Secret-Technique" salience 92
+when
+    SecretTechniqueReady()
+    StealthWindowActive()
+then
+    insert(new Recommendation("Secret Technique", 92, "HIGH", "Secret Technique u Dance prozoru — sekundarni burst CD"));
+end
+
+rule "SR-L3-Eviscerate-InDance" salience 90
+when
+    SpendCPInDance()
+    not PrioritizeRupture()
+    SubtletyRogueState(primaryResource >= 35)
+then
+    insert(new Recommendation("Eviscerate", 90, "HIGH", "Shadow Dance aktivan — troši CP u stealth prozoru"));
+end
+
+rule "SR-L3-Shadowstrike-InDance" salience 80
+when
+    StealthWindowActive()
+    not FinisherReady()
+    SubtletyRogueState(primaryResource >= 40)
+then
+    insert(new Recommendation("Shadowstrike", 80, "MEDIUM", "Gradi CP u Shadow Dance prozoru"));
+end
+
+rule "SR-L3-Shadowstrike-WaitEnergy-InDance" salience 78
+when
+    StealthWindowActive()
+    SubtletyRogueState(comboPoints < 5, primaryResource >= 15, primaryResource < 40)
+then
+    insert(new Recommendation("Shadowstrike", 78, "LOW", "Cekaj energiju (treba 40E) — ostani u Dance-u, ne gradi van stealth-a"));
+end
+
+rule "SR-L3-Shadow-Dance-General" salience 70
+when
+    ShadowDanceAvailable()
+    not ActivateDance()
+    not SymbolsAlmostReady()
+    SubtletyRogueState(primaryResource >= 30)
+then
+    insert(new Recommendation("Shadow Dance", 70, "MEDIUM", "Aktiviraj Shadow Dance — stealth prozor"));
+end
+
+rule "SR-L3-Shadow-Dance-General-WaitEnergy" salience 68
+when
+    ShadowDanceAvailable()
+    not ActivateDance()
+    not SymbolsAlmostReady()
+    SubtletyRogueState($e: primaryResource, primaryResource < 30)
+then
+    insert(new Recommendation("Shadow Dance", 68, "LOW",
+        "Cekaj energiju pre Dance-a (" + $e + "/30E) — ulazak sa premalo E traci stealth prozor"));
+end
+
+rule "SR-L3-WaitForSymbols-BeforeDance" salience 68
+when
+    ShadowDanceAvailable()
+    not SymbolsActive()
+    SymbolsAlmostReady()
+    AbilityState(name == "Symbols of Death", $cd: cooldownRemaining)
+then
+    insert(new Recommendation("Symbols of Death", 68, "MEDIUM",
+        "Sacekaj Symbols of Death (" + (int)$cd + "s) — aktiviraj pre Dance-a za max stetu"));
+end
+
+rule "SR-L3-Eviscerate-Filler" salience 65
+when
+    FinisherReady()
+    not StealthWindowActive()
+    not PrioritizeRupture()
+    SubtletyRogueState(primaryResource >= 35)
+then
+    insert(new Recommendation("Eviscerate", 65, "MEDIUM", "Troši CP — Eviscerate"));
+end
+
+rule "SR-L3-WaitForSnD-Emergency" salience 87
+when
+    SubtletyRogueState(sliceAndDiceActive == false, comboPoints >= 2, comboPoints < 5, primaryResource < 25)
+then
+    insert(new Recommendation("Slice and Dice", 87, "MEDIUM",
+        "SnD istekao — cekaj energiju (treba 25E), ne gradi vise CP"));
+end
+
+rule "SR-L3-WaitForSnD" salience 85
+when
+    SliceAndDiceRefreshNeeded()
+    FinisherReady()
+    SubtletyRogueState(primaryResource < 25)
+then
+    insert(new Recommendation("Slice and Dice", 85, "LOW", "Cekaj energiju (treba 25E) — SnD refresh uskoro"));
+end
+
+rule "SR-L3-WaitForRupture" salience 76
+when
+    PrioritizeRupture()
+    SubtletyRogueState(primaryResource < 25)
+then
+    insert(new Recommendation("Rupture", 76, "LOW", "Cekaj energiju (treba 25E) — Rupture uskoro"));
+end
+
+rule "SR-L3-WaitForEviscerate" salience 55
+when
+    FinisherReady()
+    not SliceAndDiceRefreshNeeded()
+    not PrioritizeRupture()
+    not StealthWindowActive()
+    SubtletyRogueState(primaryResource < 35)
+then
+    insert(new Recommendation("Eviscerate", 55, "LOW", "Cekaj energiju (treba 35E) — Eviscerate uskoro"));
+end
+
+rule "SR-L3-Backstab-Filler" salience 50
+when
+    SubtletyRogueState(primaryResource >= 35)
+    not FinisherReady()
+    not StealthWindowActive()
+then
+    insert(new Recommendation("Backstab", 50, "LOW", "Filler — gradi Combo Points"));
+end

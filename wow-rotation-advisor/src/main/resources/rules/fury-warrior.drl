@@ -1,142 +1,230 @@
 package rules;
 
-import com.faks.sbnz.wow_rotation_advisor.model.PlayerState;
+import com.faks.sbnz.wow_rotation_advisor.model.FuryWarriorState;
 import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
 import com.faks.sbnz.wow_rotation_advisor.model.TargetState;
-import com.faks.sbnz.wow_rotation_advisor.facts.EnragedState;
-import com.faks.sbnz.wow_rotation_advisor.facts.RageHighRisk;
-import com.faks.sbnz.wow_rotation_advisor.facts.RecklessnessReady;
-import com.faks.sbnz.wow_rotation_advisor.facts.BurstWindowOpportunity;
-import com.faks.sbnz.wow_rotation_advisor.facts.RampageUrgent;
-import com.faks.sbnz.wow_rotation_advisor.facts.Recommendation;
+import com.faks.sbnz.wow_rotation_advisor.facts.*;
 
-// ============================================================
-// NIVO 1 — DERIVACIJA STANJA
-// Izvode apstraktne cinjenice iz sirovog stanja igre
-// ============================================================
-
-rule "L1 - Detect Enraged State"
-    when
-        $p : PlayerState(enrageActive == true, enrageRemainingSeconds > 0)
-    then
-        insert(new EnragedState($p.getEnrageRemainingSeconds()));
+rule "FW-L1-EnragedState"
+when
+    FuryWarriorState(enrageActive == true, enrageRemainingSeconds > 0)
+then
+    insert(new EnragedState());
 end
 
-rule "L1 - Detect Rage High Risk"
-    when
-        $p : PlayerState(rage >= 80)
-    then
-        insert(new RageHighRisk($p.getRage()));
+rule "FW-L1-EnrageExpiring"
+when
+    FuryWarriorState(enrageActive == true, enrageRemainingSeconds < 1.5)
+then
+    insert(new EnrageExpiring());
 end
 
-rule "L1 - Detect Recklessness Ready"
-    when
-        AbilityState(name == "Recklessness", cooldownRemaining == 0.0)
-    then
-        insert(new RecklessnessReady());
+rule "FW-L1-RageHighRisk"
+when
+    FuryWarriorState(primaryResource >= 80)
+then
+    insert(new RageHighRisk());
 end
 
-// ============================================================
-// NIVO 2 — TAKTICKA PROCENA
-// Kombinuju izvedene cinjenice u takticke zakljucke
-// ============================================================
-
-rule "L2 - Burst Window Opportunity"
-    when
-        EnragedState()
-        RecklessnessReady()
-    then
-        insert(new BurstWindowOpportunity());
+rule "FW-L1-RecklessnessActive"
+when
+    FuryWarriorState(recklessnessActive == true)
+then
+    insert(new RecklessnessActive());
 end
 
-rule "L2 - Rampage Urgent - Rage High"
-    when
-        $rhr : RageHighRisk()
-    then
-        insert(new RampageUrgent("Rage visok (" + $rhr.getCurrentRage() + "/100) — overcap rizik"));
+rule "FW-L1-RecklessnessReady"
+when
+    FuryWarriorState()
+    AbilityState(name == "Recklessness", cooldownRemaining == 0.0)
+then
+    insert(new RecklessnessReady());
 end
 
-rule "L2 - Rampage Urgent - Enrage Expiring"
-    when
-        $p : PlayerState(enrageActive == true, enrageRemainingSeconds > 0, enrageRemainingSeconds <= 1.5)
-        not RageHighRisk()
-    then
-        insert(new RampageUrgent("Enrage istice za " + $p.getEnrageRemainingSeconds() + "s — hitno obnovi Rampage"));
+rule "FW-L1-ExecutePhase"
+when
+    FuryWarriorState()
+    TargetState(hpPercent < 20.0)
+then
+    insert(new ExecutePhase());
 end
 
-// ============================================================
-// NIVO 3 — PREPORUKA AKCIJE
-// Mapiraju takticke procene na konkretne sposobnosti
-// Veci salience = visi prioritet
-// ============================================================
-
-rule "L3 - Recommend Execute (Sudden Death Proc)"
-    salience 100
-    when
-        PlayerState(suddenDeathProcActive == true)
-        AbilityState(name == "Execute", cooldownRemaining == 0.0)
-    then
-        insert(new Recommendation(
-            "Execute",
-            100,
-            "HIGH",
-            "Sudden Death proc aktivan — besplatan Execute (1.7 proc/min, reset CD)"
-        ));
+rule "FW-L1-SDProcActive"
+when
+    FuryWarriorState(suddenDeathProcActive == true)
+then
+    insert(new SDProcActive());
 end
 
-rule "L3 - Recommend Recklessness (Burst Window)"
-    salience 90
-    when
-        BurstWindowOpportunity()
-        AbilityState(name == "Recklessness", cooldownRemaining == 0.0)
-    then
-        insert(new Recommendation(
-            "Recklessness",
-            90,
-            "HIGH",
-            "Enrage aktivan + Recklessness spreman — optimalni burst prozor (+50% Rage gen, +20% crit, 12s)"
-        ));
+rule "FW-L1-OdynsFuryReady"
+when
+    FuryWarriorState()
+    AbilityState(name == "Odyn's Fury", cooldownRemaining == 0.0)
+then
+    insert(new OdynsFuryReady());
 end
 
-rule "L3 - Recommend Rampage (Urgent)"
-    salience 80
-    when
-        $ru : RampageUrgent()
-        PlayerState(rage >= 80)
-    then
-        insert(new Recommendation(
-            "Rampage",
-            80,
-            "HIGH",
-            $ru.getReason()
-        ));
+rule "FW-L1-RagingBlowChargeCap"
+when
+    FuryWarriorState()
+    AbilityState(name == "Raging Blow", chargesAvailable == 2, maxCharges == 2)
+then
+    insert(new RagingBlowChargeCap());
 end
 
-rule "L3 - Recommend Bloodthirst (No Enrage)"
-    salience 60
-    when
-        not EnragedState()
-        AbilityState(name == "Bloodthirst", cooldownRemaining == 0.0)
-    then
-        insert(new Recommendation(
-            "Bloodthirst",
-            60,
-            "MEDIUM",
-            "Enrage nije aktivan — Bloodthirst za 30% sansu Enrage proca (generise 8 Rage)"
-        ));
+rule "FW-L2-RampageUrgent-EnrageExpiring"
+when
+    EnrageExpiring()
+    not RampageUrgent()
+then
+    insert(new RampageUrgent("Enrage isce — hitna obnova"));
 end
 
-rule "L3 - Recommend Raging Blow (Default Filler)"
-    salience 50
-    when
-        AbilityState(name == "Raging Blow", cooldownRemaining == 0.0, chargesAvailable > 0)
-        not RampageUrgent()
-        not BurstWindowOpportunity()
-    then
-        insert(new Recommendation(
-            "Raging Blow",
-            50,
-            "LOW",
-            "Podrazumevani filler — generise 12 Rage (25% sansa reset punjenja)"
-        ));
+rule "FW-L2-RampageUrgent-RageHigh"
+when
+    RageHighRisk()
+    not RampageUrgent()
+then
+    insert(new RampageUrgent("Rage 80+ — overcap rizik"));
+end
+
+rule "FW-L2-EmergencyRageDump"
+when
+    RampageUrgent()
+    EnragedState()
+then
+    insert(new EmergencyRageDump());
+end
+
+rule "FW-L2-BurstWindowOpportunity"
+when
+    EnragedState()
+    RecklessnessReady()
+then
+    insert(new BurstWindowOpportunity());
+end
+
+rule "FW-L2-ExecutePriorityActive-Phase"
+when
+    ExecutePhase()
+    not ExecutePriorityActive()
+then
+    insert(new ExecutePriorityActive());
+end
+
+rule "FW-L2-ExecutePriorityActive-SD"
+when
+    SDProcActive()
+    not ExecutePriorityActive()
+then
+    insert(new ExecutePriorityActive());
+end
+
+rule "FW-L3-Rampage-EnrageExpiring" salience 140
+when
+    EnrageExpiring()
+    FuryWarriorState(primaryResource >= 80)
+then
+    insert(new Recommendation("Rampage", 140, "HIGH", "Enrage isce — hitna obnova Enrage-a"));
+end
+
+rule "FW-L3-Rampage-ReckBurst" salience 130
+when
+    RecklessnessActive()
+    RageHighRisk()
+    FuryWarriorState(primaryResource >= 80)
+then
+    insert(new Recommendation("Rampage", 130, "HIGH", "Recklessness aktivan + Rage visok — troši u burst-u"));
+end
+
+rule "FW-L3-Execute-SuddenDeath" salience 120
+when
+    SDProcActive()
+    FuryWarriorState()
+    AbilityState(name == "Execute", cooldownRemaining == 0.0)
+then
+    insert(new Recommendation("Execute", 120, "HIGH", "Sudden Death proc — besplatni Execute"));
+end
+
+rule "FW-L3-Recklessness-Burst" salience 110
+when
+    BurstWindowOpportunity()
+    AbilityState(name == "Recklessness", cooldownRemaining == 0.0)
+then
+    insert(new Recommendation("Recklessness", 110, "HIGH", "Enrage + Recklessness spreman — otvori burst window"));
+end
+
+rule "FW-L3-Rampage-Urgent" salience 90
+when
+    RampageUrgent($reason: reason)
+    not EmergencyRageDump()
+    FuryWarriorState(primaryResource >= 80)
+then
+    insert(new Recommendation("Rampage", 90, "HIGH", $reason));
+end
+
+rule "FW-L3-Execute-Phase" salience 80
+when
+    ExecutePriorityActive()
+    not SDProcActive()
+    FuryWarriorState(primaryResource >= 25)
+    AbilityState(name == "Execute", cooldownRemaining == 0.0)
+then
+    insert(new Recommendation("Execute", 80, "HIGH", "Execute faza aktivan"));
+end
+
+rule "FW-L3-Odyn's-Fury-Burst" salience 105
+when
+    OdynsFuryReady()
+    RecklessnessActive()
+then
+    insert(new Recommendation("Odyn's Fury", 105, "HIGH", "Recklessness aktivan — iskoristi Odyn's Fury za AoE burst"));
+end
+
+rule "FW-L3-Bloodthirst-Recklessness-NoEnrage" salience 85
+when
+    RecklessnessActive()
+    not EnragedState()
+    AbilityState(name == "Bloodthirst", cooldownRemaining == 0.0)
+then
+    insert(new Recommendation("Bloodthirst", 85, "HIGH",
+        "Recklessness aktivan bez Enrage — Bloodthirst odmah (30% proc Enrage-a)"));
+end
+
+rule "FW-L3-RagingBlow-ChargeCap" salience 65
+when
+    RagingBlowChargeCap()
+    not RampageUrgent()
+    not EnrageExpiring()
+then
+    insert(new Recommendation("Raging Blow", 65, "MEDIUM",
+        "Raging Blow na max punjenjima — koristi odmah da ne blokiras novi recharge"));
+end
+
+rule "FW-L3-Odyn's-Fury-General" salience 75
+when
+    OdynsFuryReady()
+    not RecklessnessActive()
+then
+    insert(new Recommendation("Odyn's Fury", 75, "MEDIUM", "Odyn's Fury dostupan — sekundarni burst CD"));
+end
+
+rule "FW-L3-Bloodthirst-NoEnrage" salience 60
+when
+    FuryWarriorState()
+    not EnragedState()
+    not RampageUrgent()
+    AbilityState(name == "Bloodthirst", cooldownRemaining == 0.0)
+then
+    insert(new Recommendation("Bloodthirst", 60, "MEDIUM", "Nema Enrage — Bloodthirst (30% šansa Enrage proca)"));
+end
+
+rule "FW-L3-RagingBlow-Filler" salience 50
+when
+    FuryWarriorState()
+    AbilityState(name == "Raging Blow", chargesAvailable > 0)
+    not RampageUrgent()
+    not BurstWindowOpportunity()
+then
+    insert(new Recommendation("Raging Blow", 50, "LOW", "Filler — generiši Rage (+12)"));
 end

@@ -38,7 +38,9 @@ public class AbilityState {
     }
 
     public boolean isReady() {
-        return cooldownRemaining == 0 && (maxCharges == 1 || chargesAvailable > 0);
+        // charge-based: ready if has charges (CD is only for recharge, not blocking use)
+        if (maxCharges > 1) return chargesAvailable > 0;
+        return cooldownRemaining == 0;
     }
 
     public String getName() { return name; }

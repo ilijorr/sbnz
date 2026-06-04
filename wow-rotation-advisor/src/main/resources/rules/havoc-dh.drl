@@ -1,0 +1,293 @@
+package rules;
+
+import com.faks.sbnz.wow_rotation_advisor.model.HavocDHState;
+import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
+import com.faks.sbnz.wow_rotation_advisor.facts.*;
+
+rule "HDH-L1-MetaActive"
+when
+    HavocDHState(metamorphosisActive == true, metamorphosisRemainingSeconds > 0)
+then
+    insert(new MetaActive());
+end
+
+rule "HDH-L1-FuryHighRisk"
+when
+    HavocDHState(primaryResource >= 80)
+then
+    insert(new FuryHighRisk());
+end
+
+rule "HDH-L1-FuryOvercapRisk"
+when
+    HavocDHState(primaryResource >= 100)
+then
+    insert(new FuryOvercapRisk());
+end
+
+rule "HDH-L1-MetamorphosisReady"
+when
+    HavocDHState()
+    AbilityState(name == "Metamorphosis", cooldownRemaining == 0.0)
+then
+    insert(new MetamorphosisReady());
+end
+
+rule "HDH-L1-MetaAlmostReady"
+when
+    HavocDHState()
+    AbilityState(name == "Metamorphosis", cooldownRemaining > 0.0, cooldownRemaining <= 5.0)
+then
+    insert(new MetaAlmostReady());
+end
+
+rule "HDH-L1-EyeBeamReady"
+when
+    HavocDHState()
+    AbilityState(name == "Eye Beam", cooldownRemaining == 0.0)
+then
+    insert(new EyeBeamReady());
+end
+
+rule "HDH-L1-BladeDanceReady"
+when
+    HavocDHState()
+    AbilityState(name == "Blade Dance", cooldownRemaining == 0.0)
+then
+    insert(new BladeDanceReady());
+end
+
+rule "HDH-L1-EssenceBreakReady"
+when
+    HavocDHState()
+    AbilityState(name == "Essence Break", cooldownRemaining == 0.0)
+then
+    insert(new EssenceBreakReady());
+end
+
+rule "HDH-L1-EssenceBreakActive"
+when
+    HavocDHState(essenceBreakActive == true, essenceBreakRemainingSeconds > 0)
+then
+    insert(new EssenceBreakActive());
+end
+
+rule "HDH-L1-EssenceBreakAlmostReady"
+when
+    HavocDHState()
+    AbilityState(name == "Essence Break", cooldownRemaining > 0.0, cooldownRemaining <= 2.0)
+then
+    insert(new EssenceBreakAlmostReady());
+end
+
+rule "HDH-L1-DemonicBuff"
+when
+    HavocDHState(demonicActive == true, demonicRemainingSeconds > 0)
+then
+    insert(new DemonicBuff());
+end
+
+rule "HDH-L1-FelbladeReady"
+when
+    HavocDHState()
+    AbilityState(name == "Felblade", chargesAvailable > 0)
+then
+    insert(new FelbladeReady());
+end
+
+rule "HDH-L2-EssenceBreakSetup"
+when
+    EssenceBreakReady()
+    MetaActive()
+then
+    insert(new EssenceBreakSetup());
+end
+
+rule "HDH-L2-MaxBurstWindow"
+when
+    EssenceBreakActive()
+    MetaActive()
+then
+    insert(new MaxBurstWindow());
+end
+
+rule "HDH-L2-BurstEntryReady"
+when
+    EyeBeamReady()
+    not MetaActive()
+    not MetaAlmostReady()
+then
+    insert(new BurstEntryReady());
+end
+
+rule "HDH-L2-BladeWindowOpen"
+when
+    BladeDanceReady()
+    not MetaActive()
+then
+    insert(new BladeWindowOpen());
+end
+
+rule "HDH-L2-FuryDumpRequired"
+when
+    FuryHighRisk()
+then
+    insert(new FuryDumpRequired());
+end
+
+rule "HDH-L3-MaxBurst-BladeDance" salience 150
+when
+    MaxBurstWindow()
+    BladeDanceReady()
+    HavocDHState(primaryResource >= 35)
+then
+    insert(new Recommendation("Blade Dance", 150, "HIGH", "MAX BURST: Essence Break + Meta — Death Sweep!"));
+end
+
+rule "HDH-L3-MaxBurst-ChaosStrike" salience 148
+when
+    MaxBurstWindow()
+    not BladeDanceReady()
+    HavocDHState(primaryResource >= 40)
+then
+    insert(new Recommendation("Chaos Strike", 148, "HIGH", "MAX BURST: Essence Break + Meta — Annihilation!"));
+end
+
+rule "HDH-L3-WaitForMeta-EyeBeam" salience 118
+when
+    EyeBeamReady()
+    MetaAlmostReady()
+    not MetaActive()
+    AbilityState(name == "Metamorphosis", $cd: cooldownRemaining)
+then
+    insert(new Recommendation("Eye Beam", 118, "MEDIUM",
+        "Zadrzi Eye Beam — Meta za " + (int)$cd + "s, baci Eye Beam unutar Mete za Demonic sinergiju"));
+end
+
+rule "HDH-L3-WaitForEssenceBreak" salience 115
+when
+    EssenceBreakAlmostReady()
+    MetaActive()
+    not FuryOvercapRisk()
+    AbilityState(name == "Essence Break", $cd: cooldownRemaining)
+then
+    insert(new Recommendation("Essence Break", 115, "MEDIUM",
+        "Zadrzi Fury — Essence Break za " + (int)$cd + "s, otvara max burst window"));
+end
+
+rule "HDH-L3-EssenceBreakSetup" salience 140
+when
+    EssenceBreakSetup()
+    HavocDHState(primaryResource >= 40)
+then
+    insert(new Recommendation("Essence Break", 140, "HIGH", "Meta aktivan — primeni Essence Break za max burst"));
+end
+
+rule "HDH-L3-DeathSweep" salience 130
+when
+    MetaActive()
+    BladeDanceReady()
+    not MaxBurstWindow()
+    HavocDHState(primaryResource >= 35)
+then
+    insert(new Recommendation("Blade Dance", 130, "HIGH", "Death Sweep (Meta Blade Dance) — visok prioritet"));
+end
+
+rule "HDH-L3-Metamorphosis" salience 125
+when
+    MetamorphosisReady()
+    not MetaActive()
+    EyeBeamReady()
+then
+    insert(new Recommendation("Metamorphosis", 125, "HIGH", "Eye Beam spreman — aktiviraj Meta za sinergiju"));
+end
+
+rule "HDH-L3-EyeBeam-BurstEntry" salience 120
+when
+    BurstEntryReady()
+    HavocDHState(primaryResource >= 30)
+then
+    insert(new Recommendation("Eye Beam", 120, "HIGH", "Eye Beam van Mete — Demonic buff + burst ulaz"));
+end
+
+rule "HDH-L3-ChaosStrike-EssenceBreakWindow" salience 110
+when
+    EssenceBreakActive()
+    not MetaActive()
+    HavocDHState(primaryResource >= 40)
+then
+    insert(new Recommendation("Chaos Strike", 110, "HIGH", "Essence Break aktivan — konzumiraj amplifikaciju van Mete"));
+end
+
+rule "HDH-L3-BladeDance-Window" salience 100
+when
+    BladeWindowOpen()
+    HavocDHState(primaryResource >= 35)
+then
+    insert(new Recommendation("Blade Dance", 100, "MEDIUM", "Blade Dance van Mete — generišet Fury i štetu"));
+end
+
+rule "HDH-L3-Annihilation" salience 80
+when
+    MetaActive()
+    not BladeDanceReady()
+    not MaxBurstWindow()
+    HavocDHState(primaryResource >= 40)
+then
+    insert(new Recommendation("Chaos Strike", 80, "MEDIUM", "Annihilation (Meta Chaos Strike) — filler tokom Mete"));
+end
+
+rule "HDH-L3-FuryDump" salience 70
+when
+    FuryDumpRequired()
+    not FuryOvercapRisk()
+    HavocDHState(primaryResource >= 40)
+then
+    insert(new Recommendation("Chaos Strike", 70, "MEDIUM", "Fury blizu maksimuma — troši Chaos Strike"));
+end
+
+rule "HDH-L3-FuryOvercap-Urgent" salience 85
+when
+    FuryOvercapRisk()
+    HavocDHState(primaryResource >= 40)
+then
+    insert(new Recommendation("Chaos Strike", 85, "HIGH", "Fury pri maksimumu — troši odmah"));
+end
+
+rule "HDH-L3-ImmolationAura-InMeta" salience 95
+when
+    MetaActive()
+    HavocDHState()
+    AbilityState(name == "Immolation Aura", cooldownRemaining == 0.0)
+    not HavocDHState(immolationAuraActive == true)
+then
+    insert(new Recommendation("Immolation Aura", 95, "HIGH",
+        "Aktiviraj Immolation Aura unutar Mete — +8 Fury/s direktno u burst prozoru"));
+end
+
+rule "HDH-L3-ImmolationAura" salience 60
+when
+    not MetaActive()
+    HavocDHState()
+    AbilityState(name == "Immolation Aura", cooldownRemaining == 0.0)
+    not HavocDHState(immolationAuraActive == true)
+then
+    insert(new Recommendation("Immolation Aura", 60, "MEDIUM", "Aktiviraj Immolation Aura — +8 Fury/s tokom 6s"));
+end
+
+rule "HDH-L3-Felblade-Filler" salience 55
+when
+    FelbladeReady()
+    not FuryDumpRequired()
+then
+    insert(new Recommendation("Felblade", 55, "LOW", "Felblade dostupan — generiši Fury (+20) uz gap closer"));
+end
+
+rule "HDH-L3-DemonsBite-Filler" salience 40
+when
+    HavocDHState()
+    not FuryDumpRequired()
+    not MetaActive()
+then
+    insert(new Recommendation("Demon's Bite", 40, "LOW", "Filler — generiši Fury (+20)"));
+end
