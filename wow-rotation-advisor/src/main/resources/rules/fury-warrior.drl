@@ -5,6 +5,21 @@ import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
 import com.faks.sbnz.wow_rotation_advisor.model.TargetState;
 import com.faks.sbnz.wow_rotation_advisor.facts.*;
 
+rule "FW-L1-AvatarActive"
+when
+    FuryWarriorState(avatarActive == true, avatarRemainingSeconds > 0)
+then
+    insert(new AvatarActive());
+end
+
+rule "FW-L1-AvatarReady"
+when
+    FuryWarriorState()
+    AbilityState(name == "Avatar", cooldownRemaining == 0.0)
+then
+    insert(new AvatarReady());
+end
+
 rule "FW-L1-EnragedState"
 when
     FuryWarriorState(enrageActive == true, enrageRemainingSeconds > 0)
@@ -152,6 +167,23 @@ when
     AbilityState(name == "Recklessness", cooldownRemaining == 0.0)
 then
     insert(new Recommendation("Recklessness", 110, "HIGH", "Enrage + Recklessness spreman — otvori burst window"));
+end
+
+rule "FW-L3-Avatar-WithReck" salience 108
+when
+    RecklessnessActive()
+    AvatarReady()
+then
+    insert(new Recommendation("Avatar", 108, "HIGH", "Recklessness aktivan — aktiviraj Avatar za maks stetu (20s buff)"));
+end
+
+rule "FW-L3-Avatar-General" salience 72
+when
+    AvatarReady()
+    not RecklessnessActive()
+    not AvatarActive()
+then
+    insert(new Recommendation("Avatar", 72, "MEDIUM", "Avatar dostupan — sacekaj Recklessness za sinhronizaciju ili koristi odmah"));
 end
 
 rule "FW-L3-Rampage-Urgent" salience 90

@@ -1,0 +1,193 @@
+package cep_rules;
+
+import com.faks.sbnz.wow_rotation_advisor.events.ProcEvent;
+import com.faks.sbnz.wow_rotation_advisor.events.FinisherReadyEvent;
+import com.faks.sbnz.wow_rotation_advisor.events.FinisherUsedEvent;
+import com.faks.sbnz.wow_rotation_advisor.events.ShadowDanceActivatedEvent;
+import com.faks.sbnz.wow_rotation_advisor.events.SymbolsActivatedEvent;
+import com.faks.sbnz.wow_rotation_advisor.events.EssenceBreakAppliedEvent;
+import com.faks.sbnz.wow_rotation_advisor.events.MetaActivatedEvent;
+import com.faks.sbnz.wow_rotation_advisor.events.ResourceHighEvent;
+import com.faks.sbnz.wow_rotation_advisor.events.AbilityUsedEvent;
+import com.faks.sbnz.wow_rotation_advisor.facts.ProcStormActive;
+import com.faks.sbnz.wow_rotation_advisor.facts.MaxBurstActive;
+import com.faks.sbnz.wow_rotation_advisor.facts.EBMetaSynergyActive;
+import com.faks.sbnz.wow_rotation_advisor.facts.ResourceBleedActive;
+import com.faks.sbnz.wow_rotation_advisor.facts.RecklessnessWastedAlert;
+import com.faks.sbnz.wow_rotation_advisor.facts.DanceWindowWastedAlert;
+import com.faks.sbnz.wow_rotation_advisor.facts.TripleCDConvergenceActive;
+import com.faks.sbnz.wow_rotation_advisor.facts.MetaOpenerMissedAlert;
+import com.faks.sbnz.wow_rotation_advisor.facts.ChaosStrikeFrenzyActive;
+import com.faks.sbnz.wow_rotation_advisor.facts.BurstSequenceComplete;
+import com.faks.sbnz.wow_rotation_advisor.facts.Recommendation;
+import com.faks.sbnz.wow_rotation_advisor.model.FuryWarriorState;
+import com.faks.sbnz.wow_rotation_advisor.model.SubtletyRogueState;
+import com.faks.sbnz.wow_rotation_advisor.model.HavocDHState;
+
+rule "CEP-1-FW-ProcStorm" salience 200
+when
+    Number(intValue >= 2) from accumulate(
+        $e: ProcEvent(spec == "FURY_WARRIOR") over window:time(5s),
+        count($e)
+    )
+    FuryWarriorState()
+then
+    insert(new ProcStormActive("FURY_WARRIOR", "2+ FW proca u 5s"));
+    insert(new Recommendation("Execute", 160, "CRITICAL", "CEP Proc Storm: vise proca u 5s — iskoristi Execute odmah!"));
+end
+
+rule "CEP-1-DH-ProcStorm" salience 200
+when
+    Number(intValue >= 3) from accumulate(
+        $e: ProcEvent(spec == "HAVOC_DH") over window:time(8s),
+        count($e)
+    )
+    HavocDHState()
+then
+    insert(new ProcStormActive("HAVOC_DH", "3+ DH proca u 8s"));
+    insert(new Recommendation("Chaos Strike", 160, "CRITICAL", "CEP Proc Storm: CS refund 3x u 8s — trosi odmah!"));
+end
+
+rule "CEP-1-SR-FinisherStorm-Alert" salience 200
+when
+    Number(intValue >= 3) from accumulate(
+        $e: FinisherReadyEvent() over window:time(8s),
+        count($e)
+    )
+    SubtletyRogueState()
+then
+    insert(new ProcStormActive("SUBTLETY_ROGUE", "3+ FinisherReady u 8s"));
+end
+
+rule "CEP-1-SR-FinisherStorm-Rec" salience 200
+when
+    Number(intValue >= 3) from accumulate(
+        $e: FinisherReadyEvent() over window:time(8s),
+        count($e)
+    )
+    SubtletyRogueState(sliceAndDiceActive == true, sliceAndDiceRemainingSeconds > 2.0, comboPoints >= 5)
+then
+    insert(new Recommendation("Eviscerate", 155, "CRITICAL", "CEP CP Storm: brzo gradis CP — trosi Eviscerate odmah!"));
+end
+
+rule "CEP-2-SR-DanceConvergence-Alert" salience 195
+when
+    SubtletyRogueState()
+    $s: SymbolsActivatedEvent()
+    $d: ShadowDanceActivatedEvent(this after[0s, 6s] $s)
+then
+    insert(new MaxBurstActive("Dance+Symbols sinhronizacija u 6s"));
+end
+
+rule "CEP-2-SR-DanceConvergence-Rec" salience 195
+when
+    SubtletyRogueState(sliceAndDiceActive == true, sliceAndDiceRemainingSeconds > 2.0)
+    $s: SymbolsActivatedEvent()
+    $d: ShadowDanceActivatedEvent(this after[0s, 6s] $s)
+then
+    insert(new Recommendation("Shadowstrike", 145, "CRITICAL", "CEP: Symbols+Dance sinhronizacija — spam Shadowstrike za brze CP!"));
+end
+
+rule "CEP-3-DH-EBMetaSync" salience 195
+when
+    HavocDHState()
+    $m: MetaActivatedEvent()
+    $e: EssenceBreakAppliedEvent(this after[0s, 3s] $m)
+then
+    insert(new EBMetaSynergyActive("EB+Meta sinhronizacija — perfektan burst!"));
+    insert(new Recommendation("Blade Dance", 165, "CRITICAL", "CEP: EB+Meta sinhronizacija — Death Sweep odmah za max stetu!"));
+end
+
+rule "CEP-4-FW-ResourceBleed" salience 190
+when
+    Number(intValue >= 4) from accumulate(
+        $e: ResourceHighEvent(spec == "FURY_WARRIOR") over window:time(4s),
+        count($e)
+    )
+    FuryWarriorState()
+then
+    insert(new ResourceBleedActive("FURY_WARRIOR", "Rage 80+ vec 4 sekunde — gubi se Rage!"));
+    insert(new Recommendation("Rampage", 155, "CRITICAL", "CEP Resource Bleed: Rage traci vec 4s — HITNO iskoristi Rampage!"));
+end
+
+rule "CEP-4-DH-ResourceBleed" salience 190
+when
+    Number(intValue >= 3) from accumulate(
+        $e: ResourceHighEvent(spec == "HAVOC_DH") over window:time(3s),
+        count($e)
+    )
+    HavocDHState()
+then
+    insert(new ResourceBleedActive("HAVOC_DH", "Fury 100+ vec 3 sekunde — gubi se Fury!"));
+    insert(new Recommendation("Chaos Strike", 158, "CRITICAL", "CEP Resource Bleed: Fury traci vec 3s — HITNO trosi!"));
+end
+
+rule "CEP-5-FW-RecklessnessWasted" salience 185
+when
+    FuryWarriorState(recklessnessActive == false)
+    $r: AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Recklessness")
+    not AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Rampage", this after $r)
+    not AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Odyn's Fury", this after $r)
+then
+    insert(new RecklessnessWastedAlert("Recklessness istekao bez Rampage ili Odyn's Fury — sledeci put koristi burst CDs odmah!"));
+end
+
+rule "CEP-6-FW-AvatarRecklessnessSync" salience 200
+when
+    FuryWarriorState()
+    $a: AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Avatar")
+    $r: AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Recklessness", this after[0s, 3s] $a)
+then
+    insert(new BurstSequenceComplete("FURY_WARRIOR", "Avatar+Recklessness sinhronizovani u 3s!"));
+    insert(new Recommendation("Rampage", 162, "CRITICAL", "CEP: Avatar+Recklessness perfektna sinhronizacija — Rampage odmah za maks burst!"));
+end
+
+rule "CEP-7-SR-DanceWindowWasted" salience 185
+when
+    SubtletyRogueState(shadowDanceActive == false)
+    $d: ShadowDanceActivatedEvent()
+    not FinisherUsedEvent(this after $d)
+then
+    insert(new DanceWindowWastedAlert("Dance prozor istekao bez finishera — sledeci put udjii sa 5 CP!"));
+end
+
+rule "CEP-8-SR-TripleCDSequence-Alert" salience 198
+when
+    SubtletyRogueState()
+    $f: AbilityUsedEvent(spec == "SUBTLETY_ROGUE", abilityName == "Flagellation")
+    $s: AbilityUsedEvent(spec == "SUBTLETY_ROGUE", abilityName == "Symbols of Death", this after[0s, 8s] $f)
+    $d: AbilityUsedEvent(spec == "SUBTLETY_ROGUE", abilityName == "Shadow Dance", this after[0s, 6s] $s)
+then
+    insert(new TripleCDConvergenceActive("Flagellation→Symbols→Dance sekvenca detektovana!"));
+end
+
+rule "CEP-8-SR-TripleCDSequence-Rec" salience 198
+when
+    SubtletyRogueState(sliceAndDiceActive == true, sliceAndDiceRemainingSeconds > 2.0)
+    $f: AbilityUsedEvent(spec == "SUBTLETY_ROGUE", abilityName == "Flagellation")
+    $s: AbilityUsedEvent(spec == "SUBTLETY_ROGUE", abilityName == "Symbols of Death", this after[0s, 8s] $f)
+    $d: AbilityUsedEvent(spec == "SUBTLETY_ROGUE", abilityName == "Shadow Dance", this after[0s, 6s] $s)
+then
+    insert(new Recommendation("Shadowstrike", 152, "CRITICAL", "CEP: Trojni CD prozor — spam Shadowstrike→Eviscerate odmah!"));
+end
+
+rule "CEP-9-DH-MetaOpenerMissed" salience 185
+when
+    HavocDHState(metamorphosisActive == false)
+    $m: MetaActivatedEvent()
+    not AbilityUsedEvent(spec == "HAVOC_DH", abilityName == "Essence Break", this after $m)
+then
+    insert(new MetaOpenerMissedAlert("Meta istekla bez Essence Break — sledeci put baci EB odmah po aktivaciji!"));
+end
+
+rule "CEP-10-DH-ChaosStrikeFrenzyInMeta" salience 195
+when
+    HavocDHState(metamorphosisActive == true)
+    Number(intValue >= 4) from accumulate(
+        $e: AbilityUsedEvent(spec == "HAVOC_DH", abilityName == "Chaos Strike") over window:time(6s),
+        count($e)
+    )
+then
+    insert(new ChaosStrikeFrenzyActive("4+ Chaos Strikes u 6s unutar Meta — burst frenzy!"));
+    insert(new Recommendation("Blade Dance", 153, "CRITICAL", "CEP: CS Frenzy u Meta — Death Sweep odmah dok traje Meta!"));
+end

@@ -7,6 +7,8 @@ public class FuryWarriorState extends PlayerState {
     private boolean suddenDeathProcActive;
     private boolean recklessnessActive;
     private double recklessnessRemainingSeconds;
+    private boolean avatarActive;
+    private double avatarRemainingSeconds;
 
     public FuryWarriorState() {}
 
@@ -27,4 +29,10 @@ public class FuryWarriorState extends PlayerState {
 
     public double getRecklessnessRemainingSeconds() { return recklessnessRemainingSeconds; }
     public void setRecklessnessRemainingSeconds(double v) { this.recklessnessRemainingSeconds = v; }
+
+    public boolean isAvatarActive() { return avatarActive; }
+    public void setAvatarActive(boolean v) { this.avatarActive = v; }
+
+    public double getAvatarRemainingSeconds() { return avatarRemainingSeconds; }
+    public void setAvatarRemainingSeconds(double v) { this.avatarRemainingSeconds = v; }
 }

@@ -12,6 +12,8 @@ public class SubtletyRogueState extends PlayerState {
     private boolean flagellationActive;
     private double flagellationRemainingSeconds;
     private int flagellationStacks;
+    private boolean shadowBladesActive;
+    private double shadowBladesRemainingSeconds;
 
     public SubtletyRogueState() {
         setPrimaryResource(60);
@@ -49,4 +51,10 @@ public class SubtletyRogueState extends PlayerState {
 
     public int getFlagellationStacks() { return flagellationStacks; }
     public void setFlagellationStacks(int v) { this.flagellationStacks = Math.max(0, Math.min(30, v)); }
+
+    public boolean isShadowBladesActive() { return shadowBladesActive; }
+    public void setShadowBladesActive(boolean v) { this.shadowBladesActive = v; }
+
+    public double getShadowBladesRemainingSeconds() { return shadowBladesRemainingSeconds; }
+    public void setShadowBladesRemainingSeconds(double v) { this.shadowBladesRemainingSeconds = v; }
 }

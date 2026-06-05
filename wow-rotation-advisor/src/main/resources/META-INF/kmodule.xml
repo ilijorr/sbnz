@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <kmodule xmlns="http://www.drools.org/xsd/kmodule">
-    <kbase name="RotationAdvisorRules" packages="rules">
-        <ksession name="rotationSession"/>
+    <kbase name="RotationAdvisorRules" packages="rules,cep_rules" eventProcessingMode="stream">
+        <ksession name="rotationSession" clockType="realtime"/>
     </kbase>
 </kmodule>

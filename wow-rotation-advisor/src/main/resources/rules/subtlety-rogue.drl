@@ -5,6 +5,21 @@ import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
 import com.faks.sbnz.wow_rotation_advisor.model.DotState;
 import com.faks.sbnz.wow_rotation_advisor.facts.*;
 
+rule "SR-L1-ShadowBladesActive"
+when
+    SubtletyRogueState(shadowBladesActive == true, shadowBladesRemainingSeconds > 0)
+then
+    insert(new ShadowBladesActive());
+end
+
+rule "SR-L1-ShadowBladesReady"
+when
+    SubtletyRogueState()
+    AbilityState(name == "Shadow Blades", cooldownRemaining == 0.0)
+then
+    insert(new ShadowBladesReady());
+end
+
 rule "SR-L1-StealthWindowActive"
 when
     SubtletyRogueState(shadowDanceActive == true, shadowDanceRemainingSeconds > 0)
@@ -288,6 +303,35 @@ when
     SubtletyRogueState(primaryResource >= 35)
     not FinisherReady()
     not StealthWindowActive()
+    not ShadowBladesActive()
 then
     insert(new Recommendation("Backstab", 50, "LOW", "Filler — gradi Combo Points"));
+end
+
+rule "SR-L3-ShadowBlades-WithSymbols" salience 106
+when
+    ShadowBladesReady()
+    SymbolsActive()
+    not ShadowBladesActive()
+then
+    insert(new Recommendation("Shadow Blades", 106, "HIGH", "Symbols aktivan — aktiviraj Shadow Blades za produzeni burst prozor!"));
+end
+
+rule "SR-L3-ShadowBlades-General" salience 73
+when
+    ShadowBladesReady()
+    not SymbolsActive()
+    not ShadowBladesActive()
+then
+    insert(new Recommendation("Shadow Blades", 73, "MEDIUM", "Shadow Blades dostupan — sacekaj Symbols ili koristi odmah"));
+end
+
+rule "SR-L3-Shadowstrike-ShadowBlades" salience 83
+when
+    ShadowBladesActive()
+    not StealthWindowActive()
+    not FinisherReady()
+    SubtletyRogueState(primaryResource >= 40)
+then
+    insert(new Recommendation("Shadowstrike", 83, "HIGH", "Shadow Blades: Shadowstrike bez Dance prozora — gradi CP brzo!"));
 end

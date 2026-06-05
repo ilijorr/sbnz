@@ -96,6 +96,21 @@ h1 { text-align: center; color: #c69b3a; font-size: 1.5rem; letter-spacing: 2px;
              font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1px; }
 .reset-btn:hover { background: #3a2500; }
 .error-msg { color: #ff4040; font-size: 0.78rem; text-align: center; margin-top: 7px; min-height: 18px; }
+
+.rec-box.CRITICAL { border-color: #dd00ff; background: #1a001f; animation: cep-pulse 0.8s ease-in-out infinite; }
+.urgency-CRITICAL { color: #dd00ff; }
+@keyframes cep-pulse { 0%,100% { box-shadow: 0 0 10px rgba(221,0,255,0.3); } 50% { box-shadow: 0 0 28px rgba(221,0,255,0.7); } }
+
+.cep-section { grid-column: 1 / -1; display: none; }
+.cep-section.visible { display: block; }
+.cep-header { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 2px; color: #aa44dd;
+              border-bottom: 1px solid #3a1050; padding-bottom: 5px; margin-bottom: 8px; }
+.cep-label { font-size: 0.62rem; color: #aa44dd; margin-right: 6px; font-weight: bold; letter-spacing: 1px; }
+.cep-alerts { display: flex; flex-direction: column; gap: 5px; }
+.cep-alert { background: #120020; border: 1px solid #7700bb; border-radius: 5px; padding: 7px 11px;
+             font-size: 0.78rem; color: #dd88ff; display: flex; align-items: center; gap: 8px; }
+.cep-badge { background: #4400aa; color: #fff; border-radius: 3px; padding: 1px 6px;
+             font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -159,6 +174,11 @@ h1 { text-align: center; color: #c69b3a; font-size: 1.5rem; letter-spacing: 2px;
     <div class="error-msg" id="errorMsg"></div>
   </div>
 
+  <div class="card cep-section" id="cepSection">
+    <div class="cep-header"><span class="cep-label">⚡ CEP</span>Drools Fusion — Aktivni vremenski obrasci</div>
+    <div class="cep-alerts" id="cepAlertsList"></div>
+  </div>
+
   <div class="card" style="grid-column: 1 / -1">
     <h2>Zdravlje protivnika</h2>
     <div class="target-hp">
@@ -176,47 +196,52 @@ const SPEC_CONFIG = {
   FURY_WARRIOR: {
     resourceLabel: "Rage", maxResource: 100,
     gradient: "linear-gradient(90deg,#8b0000,#cc3300,#ff6600)",
-    abilities: ["Bloodthirst","Raging Blow","Rampage","Execute","Recklessness","Odyn's Fury"],
+    abilities: ["Bloodthirst","Raging Blow","Rampage","Execute","Recklessness","Avatar","Odyn's Fury"],
     costs: { "Bloodthirst":"0 Rage · +8R","Raging Blow":"0 Rage · +12R",
              "Rampage":"80 Rage · Enrage","Execute":"25 Rage · <20%/SD","Recklessness":"0 · 12s buff",
-             "Odyn's Fury":"0 · 60s CD · AoE burst" },
+             "Avatar":"0 · 90s CD · 20s buff","Odyn's Fury":"0 · 60s CD · AoE burst" },
     descriptions: {
       "Bloodthirst":  "Brzi udarac koji generiše +8 Rage i ima 30% šansu da aktivira Enrage — ključni buff za rotaciju. Primarni izvor Enrage-a.",
       "Raging Blow":  "Dvostruki udarac koji generiše +12 Rage. Ima 2 punjenja — trosite oba da ne ostanete bez punjenja.",
       "Rampage":      "Serija od 4 napada. Troši 80 Rage, GARANTOVANO aktivira Enrage 4s. Koristiti kad imate 80+ Rage ili kad Enrage isce.",
       "Execute":      "Smrtonosni udarac za neprijatelje ispod 20% HP-a. Takodje besplatan uz Sudden Death (žuti proc). Prioritet u execute fazi.",
       "Recklessness": "12s buff koji ubrzava generisanje Rage-a i pojacava sve napade. Aktivirajte kad ste pod Enrage-om za max sinergiju.",
+      "Avatar":       "20s buff (90s CD) koji pojacava sve napade. UVEK aktivirati zajedno sa Recklessness — CEP detektuje sinhronizaciju i daje CRITICAL alert za Rampage.",
       "Odyn's Fury":  "AoE burst CD (60s). Nanosi visoku štetu svim neprijateljima oko vas. Idealno tokom Recklessness prozora."
     },
     buffs: [
       { key:"enrage",       label:"Enrage",       timerKey:"enrageRemainingSeconds",       activeKey:"enrageActive" },
       { key:"recklessness", label:"Recklessness",  timerKey:"recklessnessRemainingSeconds", activeKey:"recklessnessActive" },
+      { key:"avatar",       label:"Avatar",        timerKey:"avatarRemainingSeconds",        activeKey:"avatarActive" },
       { key:"suddenDeath",  label:"Sudden Death",  timerKey:null,                           activeKey:"suddenDeathProcActive" }
     ]
   },
   SUBTLETY_ROGUE: {
     resourceLabel: "Energy", maxResource: 100,
     gradient: "linear-gradient(90deg,#1a3a00,#4a8a00,#aaee44)",
-    abilities: ["Shadowstrike","Backstab","Eviscerate","Rupture","Slice and Dice","Shadow Dance","Symbols of Death","Flagellation","Secret Technique"],
-    costs: { "Shadowstrike":"40E · +2CP (Dance)","Backstab":"35E · +2CP",
+    abilities: ["Shadowstrike","Backstab","Eviscerate","Rupture","Slice and Dice","Shadow Dance","Symbols of Death","Flagellation","Secret Technique","Shadow Blades"],
+    costs: { "Shadowstrike":"40E · +2CP (Dance/SB)","Backstab":"35E · +2CP",
              "Eviscerate":"35E · Troši CP","Rupture":"25E · 5+CP DoT",
              "Slice and Dice":"25E · 5+CP · (6+CP×2)s","Shadow Dance":"0 · Stealth 8s",
              "Symbols of Death":"0 · 34s buff","Flagellation":"0 · 30s CD · 12s",
-             "Secret Technique":"0 · 45s CD (Dance)" },
+             "Secret Technique":"0 · 45s CD (Dance)",
+             "Shadow Blades":"0 · 180s CD · 20s buff" },
     descriptions: {
-      "Shadowstrike":     "Napad iz skrivanja koji gradi +2 Combo Poena. ZAHTEVA Shadow Dance (stealth). Jaci od Backstab-a — graditi CP uvek ovim unutar Dance prozora.",
+      "Shadowstrike":     "Napad iz skrivanja koji gradi +2 Combo Poena. Zahteva Shadow Dance ILI Shadow Blades. Jaci od Backstab-a — graditi CP uvek ovim unutar stealth prozora.",
       "Backstab":         "Standardni udarac koji gradi +2 Combo Poena. Koristiti VAN stealth prozora kad treba graditi CP.",
       "Eviscerate":       "Finisher — troši SVE Combo Poene za jak udarac. Koristiti sa 5–7 CP, po mogucnosti unutar Shadow Dance-a.",
       "Rupture":          "Finisher koji postavlja krvarenje (DoT) na neprijatelja. Zahteva 5+ CP. Trajanje = (8+CP×2)s. Obnovite unutar 4.2s pre isteka (pandemic prozor).",
       "Slice and Dice":   "Maintenance buff koji se UVEK mora odrzavati. Finisher (5+ CP, 25E). Trajanje = (6+CP×2)s. Najvisi prioritet u rotaciji — bez njega gubite znacajnu stetu.",
       "Shadow Dance":     "Ulazak u stealth na 8s. Omogucava Shadowstrike i Secret Technique. Ima 2 punjenja. Koristiti POSLE Symbols of Death za max stetu.",
       "Symbols of Death": "34s buff koji pojacava sve napade. Uvek aktivirati PRE Shadow Dance-a. Reinicijalizuje se svake 38s.",
-      "Flagellation":     "Burst CD (30s). Aplicira debuff na neprijatelju. Svaki finisher tokom 12s dodaje 1 stack (max 30) — svaki stack pojacava finishere za 6%. Aktivirati pre Dance-a.",
-      "Secret Technique": "Sekundarni burst CD (45s) bez ikakvih troskova. Koristiti ODMAH unutar Shadow Dance prozora za max stetu."
+      "Flagellation":     "Burst CD (30s). Aplicira debuff na neprijatelju. Svaki finisher tokom 12s dodaje 1 stack (max 30) — svaki stack pojacava finishere za 6%. CEP detektuje: Flag→Symbols→Dance sekvencu!",
+      "Secret Technique": "Sekundarni burst CD (45s) bez ikakvih troskova. Koristiti ODMAH unutar Shadow Dance prozora za max stetu.",
+      "Shadow Blades":    "20s buff (180s CD). Tokom trajanja: Shadowstrike ne zahteva Dance — graditi CP direktno. CEP detektuje protracenost ako Dance istekne bez finishera."
     },
     buffs: [
       { key:"shadowDance",    label:"Shadow Dance",     timerKey:"shadowDanceRemainingSeconds",    activeKey:"shadowDanceActive" },
       { key:"symbolsOfDeath", label:"Symbols of Death", timerKey:"symbolsOfDeathRemainingSeconds", activeKey:"symbolsOfDeathActive" },
+      { key:"shadowBlades",   label:"Shadow Blades",    timerKey:"shadowBladesRemainingSeconds",    activeKey:"shadowBladesActive" },
       { key:"sliceAndDice",   label:"Slice & Dice",     timerKey:"sliceAndDiceRemainingSeconds",   activeKey:"sliceAndDiceActive" },
       { key:"flagellation",   label:"Flagellation",     timerKey:"flagellationRemainingSeconds",   activeKey:"flagellationActive", stacksKey:"flagellationStacks" }
     ]
@@ -224,20 +249,22 @@ const SPEC_CONFIG = {
   HAVOC_DH: {
     resourceLabel: "Fury", maxResource: 120,
     gradient: "linear-gradient(90deg,#4a0080,#8800cc,#cc44ff)",
-    abilities: ["Demon's Bite","Chaos Strike","Blade Dance","Eye Beam","Essence Break","Metamorphosis","Immolation Aura","Felblade"],
+    abilities: ["Demon's Bite","Chaos Strike","Blade Dance","Eye Beam","Essence Break","Metamorphosis","Immolation Aura","Felblade","Fel Devastation"],
     costs: { "Demon's Bite":"0 · +20F","Chaos Strike":"40F · 20% refund",
              "Blade Dance":"35F · 9s CD · Death Sweep u Meta","Eye Beam":"30F · Demonic 6s · 30s CD",
              "Essence Break":"0 · 15s CD · +40% dmg 4s","Metamorphosis":"0 · 3min CD · 30s",
-             "Immolation Aura":"0 · +8F/s · 30s CD","Felblade":"0 · +20F · 2 pun." },
+             "Immolation Aura":"0 · +8F/s · 30s CD","Felblade":"0 · +20F · 2 pun.",
+             "Fel Devastation":"50F · 30s CD · burst u Meta" },
     descriptions: {
       "Demon's Bite":    "Brzi napad koji generiše +20 Fury bez troška. Apsolutni filler — koristite SAMO kad su svi CD-ovi na hladjenju.",
-      "Chaos Strike":    "Standardni napad (40 Fury). Ima 20% šansu da vrati 20 Fury (Chaos Cleave proc). Postaje Annihilation tokom Metamorphosisa — isti napad, duplo jaci.",
+      "Chaos Strike":    "Standardni napad (40 Fury). Ima 20% šansu da vrati 20 Fury (Chaos Cleave proc). Postaje Annihilation tokom Metamorphosisa. CEP detektuje 4+ CS u 6s unutar Meta!",
       "Blade Dance":     "Serija napada (35 Fury, 9s CD) koja pogadja sve neprijatelje. Tokom Metamorphosisa postaje Death Sweep — znatno mocniji. Idealan unutar Essence Break prozora.",
       "Eye Beam":        "Mocan laserski napad (30 Fury, 30s CD) koji aktivira Demonic buff na 6s — privremeni mini-Metamorphosis. Koristiti kad je Metamorphosis aktivan za sinergiju.",
-      "Essence Break":   "Aplicira debuff koji pojacava SVE vase sledece napade za 40% tokom 4s. UVEK aktivirati neposredno pre Blade Dance / Chaos Strike za max stetu.",
-      "Metamorphosis":   "Transformacija u demona na 30s (3min CD). Sve sposobnosti postaju jace, Blade Dance postaje Death Sweep. Aktivirati kad su Eye Beam i Essence Break dostupni.",
+      "Essence Break":   "Aplicira debuff koji pojacava SVE vase sledece napade za 40% tokom 4s. UVEK aktivirati ODMAH po aktivaciji Meta (CEP detektuje ako EB nije bacan u prvih 3s).",
+      "Metamorphosis":   "Transformacija u demona na 30s (3min CD). Aktivirati kad su Eye Beam i Essence Break dostupni. CEP detektuje propusteni opener ako EB nije bacan!",
       "Immolation Aura": "Aktivna aura (30s CD) koja AUTOMATSKI generiše +8 Fury/s tokom 6s (+48 ukupno). Uvek aktivirati cim je dostupna.",
-      "Felblade":        "Gap closer + generator Fury-ja (+20). Ima 2 punjenja (30s hladjenje po punjenju). Koristiti kao filler kad nema urgentnih CD-ova."
+      "Felblade":        "Gap closer + generator Fury-ja (+20). Ima 2 punjenja (30s hladjenje po punjenju). Koristiti kao filler kad nema urgentnih CD-ova.",
+      "Fel Devastation": "Snazni kanalisani napad (50 Fury, 30s CD). Idealno koristiti unutar Meta+EB prozora. CEP preporucuje kada je MaxBurstWindow aktivan."
     },
     buffs: [
       { key:"metamorphosis",  label:"Metamorphosis",   timerKey:"metamorphosisRemainingSeconds",  activeKey:"metamorphosisActive" },
@@ -384,6 +411,22 @@ function updateUI(data) {
   const wb = document.getElementById("warningBar");
   wb.textContent = warn;
   wb.className   = "warning-bar" + (warn ? " visible" : "");
+
+  const alerts = data.cepAlerts || [];
+  const cepSection = document.getElementById("cepSection");
+  const cepList = document.getElementById("cepAlertsList");
+  if (alerts.length > 0) {
+    cepSection.className = "card cep-section visible";
+    cepList.innerHTML = alerts.map(msg => {
+      const parts = msg.split(" — ");
+      const badge = parts[0] || "CEP";
+      const text  = parts.slice(1).join(" — ") || msg;
+      return `<div class="cep-alert"><span class="cep-badge">${badge}</span>${text}</div>`;
+    }).join("");
+  } else {
+    cepSection.className = "card cep-section";
+    cepList.innerHTML = "";
+  }
 }
 
 async function useAbility(name) {

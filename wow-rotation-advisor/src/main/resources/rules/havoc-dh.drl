@@ -4,6 +4,14 @@ import com.faks.sbnz.wow_rotation_advisor.model.HavocDHState;
 import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
 import com.faks.sbnz.wow_rotation_advisor.facts.*;
 
+rule "HDH-L1-FelDevastationReady"
+when
+    HavocDHState()
+    AbilityState(name == "Fel Devastation", cooldownRemaining == 0.0)
+then
+    insert(new FelDevastationReady());
+end
+
 rule "HDH-L1-MetaActive"
 when
     HavocDHState(metamorphosisActive == true, metamorphosisRemainingSeconds > 0)
@@ -290,4 +298,32 @@ when
     not MetaActive()
 then
     insert(new Recommendation("Demon's Bite", 40, "LOW", "Filler — generiši Fury (+20)"));
+end
+
+rule "HDH-L3-FelDevastation-MaxBurst" salience 97
+when
+    MaxBurstWindow()
+    FelDevastationReady()
+    HavocDHState(primaryResource >= 50)
+then
+    insert(new Recommendation("Fel Devastation", 97, "HIGH", "Max Burst u Meta+EB — Fel Devastation za pojacanu stetu!"));
+end
+
+rule "HDH-L3-FelDevastation-InMeta" salience 63
+when
+    MetaActive()
+    FelDevastationReady()
+    not MaxBurstWindow()
+    HavocDHState(primaryResource >= 50)
+then
+    insert(new Recommendation("Fel Devastation", 63, "MEDIUM", "Meta aktivan — Fel Devastation pre nego sto stekne EB"));
+end
+
+rule "HDH-L3-FelDevastation-General" salience 45
+when
+    FelDevastationReady()
+    not MetaActive()
+    HavocDHState(primaryResource >= 50)
+then
+    insert(new Recommendation("Fel Devastation", 45, "LOW", "Fel Devastation dostupan — sacekaj Metu ili koristi ako CD pritiska"));
 end

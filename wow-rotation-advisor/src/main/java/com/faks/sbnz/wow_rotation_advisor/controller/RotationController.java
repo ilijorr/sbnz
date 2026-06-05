@@ -65,6 +65,7 @@ public class RotationController {
 
         response.put("warning", service.getWarningMessage());
         response.put("prereqChain", service.getCurrentPrereqChain());
+        response.put("cepAlerts", service.getCepAlerts());
         return response;
     }
 
