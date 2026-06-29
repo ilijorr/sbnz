@@ -38,8 +38,6 @@ public class TemplateRulesGenerator {
 
     public String generateEffectExpiring() throws IOException {
         List<Map<String, Object>> data = List.of(
-            Map.of("stateClass", "FuryWarriorState",   "activeField", "enrageActive",
-                   "remainingField", "enrageRemainingSeconds",      "threshold", 1.5, "factClass", "EnrageExpiring"),
             Map.of("stateClass", "SubtletyRogueState", "activeField", "sliceAndDiceActive",
                    "remainingField", "sliceAndDiceRemainingSeconds", "threshold", 2.0, "factClass", "SliceAndDiceRefreshNeeded")
         );

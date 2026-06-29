@@ -19,6 +19,13 @@ then
     insert(new EnragedState());
 end
 
+rule "FW-L1-EnrageExpiring"
+when
+    FuryWarriorState(enrageActive == true, enrageRemainingSeconds < 1.5)
+then
+    insert(new EnrageExpiring());
+end
+
 rule "FW-L1-RecklessnessActive"
 when
     FuryWarriorState(recklessnessActive == true)

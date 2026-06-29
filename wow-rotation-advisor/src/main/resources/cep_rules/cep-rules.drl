@@ -132,13 +132,21 @@ then
     insert(new RecklessnessWastedAlert("Recklessness istekao bez Rampage ili Odyn's Fury — sledeci put koristi burst CDs odmah!"));
 end
 
-rule "CEP-6-FW-AvatarRecklessnessSync" salience 200
+rule "CEP-6-FW-AvatarRecklessnessSync-Alert" salience 200
 when
     FuryWarriorState()
     $a: AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Avatar")
     $r: AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Recklessness", this after[0s, 3s] $a)
 then
     insert(new BurstSequenceComplete("FURY_WARRIOR", "Avatar+Recklessness sinhronizovani u 3s!"));
+end
+
+rule "CEP-6-FW-AvatarRecklessnessSync-Rec" salience 200
+when
+    FuryWarriorState(primaryResource >= 80)
+    $a: AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Avatar")
+    $r: AbilityUsedEvent(spec == "FURY_WARRIOR", abilityName == "Recklessness", this after[0s, 3s] $a)
+then
     insert(new Recommendation("Rampage", 162, "CRITICAL", "CEP: Avatar+Recklessness perfektna sinhronizacija — Rampage odmah za maks burst!"));
 end
 
