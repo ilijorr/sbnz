@@ -1,0 +1,19 @@
+template header
+refreshNeededFactClass
+priorityFactClass
+
+package rules;
+
+import com.faks.sbnz.wow_rotation_advisor.facts.*;
+
+template "FinisherForRefresh"
+
+rule "L2-FinisherForRefresh-@{priorityFactClass}"
+when
+    @{refreshNeededFactClass}()
+    FinisherReady()
+then
+    insert(new @{priorityFactClass}());
+end
+
+end template

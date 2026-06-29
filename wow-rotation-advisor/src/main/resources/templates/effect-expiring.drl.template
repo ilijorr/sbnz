@@ -1,0 +1,22 @@
+template header
+stateClass
+activeField
+remainingField
+threshold
+factClass
+
+package rules;
+
+import com.faks.sbnz.wow_rotation_advisor.model.*;
+import com.faks.sbnz.wow_rotation_advisor.facts.*;
+
+template "EffectExpiring"
+
+rule "L1-EffectExpiring-@{factClass}"
+when
+    @{stateClass}(@{activeField} == false || @{remainingField} <= @{threshold})
+then
+    insert(new @{factClass}());
+end
+
+end template

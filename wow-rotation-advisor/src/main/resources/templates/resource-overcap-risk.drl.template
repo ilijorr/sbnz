@@ -1,0 +1,20 @@
+template header
+stateClass
+threshold
+riskFactClass
+
+package rules;
+
+import com.faks.sbnz.wow_rotation_advisor.model.*;
+import com.faks.sbnz.wow_rotation_advisor.facts.*;
+
+template "ResourceOvercapRisk"
+
+rule "L1-ResourceOvercapRisk-@{riskFactClass}"
+when
+    @{stateClass}(primaryResource >= @{threshold})
+then
+    insert(new @{riskFactClass}());
+end
+
+end template

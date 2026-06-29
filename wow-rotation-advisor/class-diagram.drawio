@@ -1,0 +1,132 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="class-diagram" name="Page-1">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- PlayerState -->
+        <mxCell id="PlayerState" parent="1"
+          style="swimlane;fontStyle=1;align=center;startSize=30;container=1;collapsible=0;childLayout=stackLayout;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;"
+          value="PlayerState" vertex="1">
+          <mxGeometry x="60" y="60" width="260" height="216" as="geometry" />
+        </mxCell>
+        <mxCell id="PS_sep" parent="PlayerState"
+          style="text;strokeColor=#6c8ebf;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="" vertex="1">
+          <mxGeometry y="30" width="260" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="PS_1" parent="PlayerState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- rage: int" vertex="1">
+          <mxGeometry y="38" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="PS_2" parent="PlayerState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- enrageActive: boolean" vertex="1">
+          <mxGeometry y="64" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="PS_3" parent="PlayerState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- enrageRemainingSeconds: double" vertex="1">
+          <mxGeometry y="90" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="PS_4" parent="PlayerState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- suddenDeathProcActive: boolean" vertex="1">
+          <mxGeometry y="116" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="PS_5" parent="PlayerState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- recklessnessActive: boolean" vertex="1">
+          <mxGeometry y="142" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="PS_6" parent="PlayerState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- recklessnessRemainingSeconds: double" vertex="1">
+          <mxGeometry y="168" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="PS_sep2" parent="PlayerState"
+          style="text;strokeColor=#6c8ebf;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="" vertex="1">
+          <mxGeometry y="194" width="260" height="8" as="geometry" />
+        </mxCell>
+
+        <!-- AbilityState -->
+        <mxCell id="AbilityState" parent="1"
+          style="swimlane;fontStyle=1;align=center;startSize=30;container=1;collapsible=0;childLayout=stackLayout;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;"
+          value="AbilityState" vertex="1">
+          <mxGeometry x="390" y="60" width="260" height="272" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_sep" parent="AbilityState"
+          style="text;strokeColor=#6c8ebf;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="" vertex="1">
+          <mxGeometry y="30" width="260" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_1" parent="AbilityState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- name: String" vertex="1">
+          <mxGeometry y="38" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_2" parent="AbilityState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- cooldownRemaining: double" vertex="1">
+          <mxGeometry y="64" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_3" parent="AbilityState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- chargesAvailable: int" vertex="1">
+          <mxGeometry y="90" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_4" parent="AbilityState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- maxCooldown: double" vertex="1">
+          <mxGeometry y="116" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_5" parent="AbilityState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- maxCharges: int" vertex="1">
+          <mxGeometry y="142" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_sep2" parent="AbilityState"
+          style="text;strokeColor=#6c8ebf;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="" vertex="1">
+          <mxGeometry y="168" width="260" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_m1" parent="AbilityState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="+ useCharge(): void" vertex="1">
+          <mxGeometry y="176" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_m2" parent="AbilityState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="+ tick(seconds: double): void" vertex="1">
+          <mxGeometry y="202" width="260" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="AS_m3" parent="AbilityState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="+ isReady(): boolean" vertex="1">
+          <mxGeometry y="228" width="260" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- TargetState -->
+        <mxCell id="TargetState" parent="1"
+          style="swimlane;fontStyle=1;align=center;startSize=30;container=1;collapsible=0;childLayout=stackLayout;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;"
+          value="TargetState" vertex="1">
+          <mxGeometry x="720" y="60" width="220" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="TS_sep" parent="TargetState"
+          style="text;strokeColor=#6c8ebf;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="" vertex="1">
+          <mxGeometry y="30" width="220" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="TS_1" parent="TargetState"
+          style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;"
+          value="- hpPercent: double" vertex="1">
+          <mxGeometry y="38" width="220" height="26" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

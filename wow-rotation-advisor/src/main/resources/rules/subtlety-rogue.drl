@@ -12,14 +12,6 @@ then
     insert(new ShadowBladesActive());
 end
 
-rule "SR-L1-ShadowBladesReady"
-when
-    SubtletyRogueState()
-    AbilityState(name == "Shadow Blades", cooldownRemaining == 0.0)
-then
-    insert(new ShadowBladesReady());
-end
-
 rule "SR-L1-StealthWindowActive"
 when
     SubtletyRogueState(shadowDanceActive == true, shadowDanceRemainingSeconds > 0)
@@ -51,14 +43,6 @@ then
     insert(new RuptureRefreshNeeded());
 end
 
-rule "SR-L1-SymbolsReady"
-when
-    SubtletyRogueState()
-    AbilityState(name == "Symbols of Death", cooldownRemaining == 0.0)
-then
-    insert(new SymbolsReady());
-end
-
 rule "SR-L1-SymbolsActive"
 when
     SubtletyRogueState(symbolsOfDeathActive == true)
@@ -74,34 +58,11 @@ then
     insert(new SymbolsAlmostReady());
 end
 
-rule "SR-L1-SliceAndDiceRefreshNeeded"
-when
-    SubtletyRogueState(sliceAndDiceActive == false || sliceAndDiceRemainingSeconds <= 2.0)
-then
-    insert(new SliceAndDiceRefreshNeeded());
-end
-
-rule "SR-L1-FlagellationReady"
-when
-    SubtletyRogueState()
-    AbilityState(name == "Flagellation", cooldownRemaining == 0.0)
-then
-    insert(new FlagellationReady());
-end
-
 rule "SR-L1-FlagellationActive"
 when
     SubtletyRogueState(flagellationActive == true)
 then
     insert(new FlagellationActive());
-end
-
-rule "SR-L1-SecretTechniqueReady"
-when
-    SubtletyRogueState()
-    AbilityState(name == "Secret Technique", cooldownRemaining == 0.0)
-then
-    insert(new SecretTechniqueReady());
 end
 
 rule "SR-L2-ActivateDance"
@@ -120,14 +81,6 @@ then
     insert(new SpendCPInDance());
 end
 
-rule "SR-L2-PrioritizeRupture"
-when
-    RuptureRefreshNeeded()
-    FinisherReady()
-then
-    insert(new PrioritizeRupture());
-end
-
 rule "SR-L3-Slice-and-Dice-Emergency" salience 135
 when
     SubtletyRogueState(sliceAndDiceActive == false, $cp: comboPoints, comboPoints >= 2, comboPoints < 5, primaryResource >= 25)
@@ -138,8 +91,7 @@ end
 
 rule "SR-L3-Slice-and-Dice" salience 130
 when
-    SliceAndDiceRefreshNeeded()
-    FinisherReady()
+    PrioritizeSnd()
     SubtletyRogueState(primaryResource >= 25)
 then
     insert(new Recommendation("Slice and Dice", 130, "HIGH", "Slice and Dice — obnovi maintenance buff odmah"));
@@ -272,8 +224,7 @@ end
 
 rule "SR-L3-WaitForSnD" salience 85
 when
-    SliceAndDiceRefreshNeeded()
-    FinisherReady()
+    PrioritizeSnd()
     SubtletyRogueState(primaryResource < 25)
 then
     insert(new Recommendation("Slice and Dice", 85, "LOW", "Cekaj energiju (treba 25E) — SnD refresh uskoro"));

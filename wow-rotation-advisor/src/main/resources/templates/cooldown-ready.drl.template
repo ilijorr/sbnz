@@ -1,0 +1,19 @@
+template header
+abilityName
+readyFactClass
+
+package rules;
+
+import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
+import com.faks.sbnz.wow_rotation_advisor.facts.*;
+
+template "CooldownReady"
+
+rule "L1-CooldownReady-@{abilityName}"
+when
+    AbilityState(name == "@{abilityName}", cooldownRemaining == 0.0)
+then
+    insert(new @{readyFactClass}());
+end
+
+end template

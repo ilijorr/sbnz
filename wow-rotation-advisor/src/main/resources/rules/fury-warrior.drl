@@ -12,14 +12,6 @@ then
     insert(new AvatarActive());
 end
 
-rule "FW-L1-AvatarReady"
-when
-    FuryWarriorState()
-    AbilityState(name == "Avatar", cooldownRemaining == 0.0)
-then
-    insert(new AvatarReady());
-end
-
 rule "FW-L1-EnragedState"
 when
     FuryWarriorState(enrageActive == true, enrageRemainingSeconds > 0)
@@ -27,33 +19,11 @@ then
     insert(new EnragedState());
 end
 
-rule "FW-L1-EnrageExpiring"
-when
-    FuryWarriorState(enrageActive == true, enrageRemainingSeconds < 1.5)
-then
-    insert(new EnrageExpiring());
-end
-
-rule "FW-L1-RageHighRisk"
-when
-    FuryWarriorState(primaryResource >= 80)
-then
-    insert(new RageHighRisk());
-end
-
 rule "FW-L1-RecklessnessActive"
 when
     FuryWarriorState(recklessnessActive == true)
 then
     insert(new RecklessnessActive());
-end
-
-rule "FW-L1-RecklessnessReady"
-when
-    FuryWarriorState()
-    AbilityState(name == "Recklessness", cooldownRemaining == 0.0)
-then
-    insert(new RecklessnessReady());
 end
 
 rule "FW-L1-ExecutePhase"
@@ -69,14 +39,6 @@ when
     FuryWarriorState(suddenDeathProcActive == true)
 then
     insert(new SDProcActive());
-end
-
-rule "FW-L1-OdynsFuryReady"
-when
-    FuryWarriorState()
-    AbilityState(name == "Odyn's Fury", cooldownRemaining == 0.0)
-then
-    insert(new OdynsFuryReady());
 end
 
 rule "FW-L1-RagingBlowChargeCap"

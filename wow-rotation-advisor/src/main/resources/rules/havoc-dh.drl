@@ -4,41 +4,11 @@ import com.faks.sbnz.wow_rotation_advisor.model.HavocDHState;
 import com.faks.sbnz.wow_rotation_advisor.model.AbilityState;
 import com.faks.sbnz.wow_rotation_advisor.facts.*;
 
-rule "HDH-L1-FelDevastationReady"
-when
-    HavocDHState()
-    AbilityState(name == "Fel Devastation", cooldownRemaining == 0.0)
-then
-    insert(new FelDevastationReady());
-end
-
 rule "HDH-L1-MetaActive"
 when
     HavocDHState(metamorphosisActive == true, metamorphosisRemainingSeconds > 0)
 then
     insert(new MetaActive());
-end
-
-rule "HDH-L1-FuryHighRisk"
-when
-    HavocDHState(primaryResource >= 80)
-then
-    insert(new FuryHighRisk());
-end
-
-rule "HDH-L1-FuryOvercapRisk"
-when
-    HavocDHState(primaryResource >= 100)
-then
-    insert(new FuryOvercapRisk());
-end
-
-rule "HDH-L1-MetamorphosisReady"
-when
-    HavocDHState()
-    AbilityState(name == "Metamorphosis", cooldownRemaining == 0.0)
-then
-    insert(new MetamorphosisReady());
 end
 
 rule "HDH-L1-MetaAlmostReady"
@@ -47,30 +17,6 @@ when
     AbilityState(name == "Metamorphosis", cooldownRemaining > 0.0, cooldownRemaining <= 5.0)
 then
     insert(new MetaAlmostReady());
-end
-
-rule "HDH-L1-EyeBeamReady"
-when
-    HavocDHState()
-    AbilityState(name == "Eye Beam", cooldownRemaining == 0.0)
-then
-    insert(new EyeBeamReady());
-end
-
-rule "HDH-L1-BladeDanceReady"
-when
-    HavocDHState()
-    AbilityState(name == "Blade Dance", cooldownRemaining == 0.0)
-then
-    insert(new BladeDanceReady());
-end
-
-rule "HDH-L1-EssenceBreakReady"
-when
-    HavocDHState()
-    AbilityState(name == "Essence Break", cooldownRemaining == 0.0)
-then
-    insert(new EssenceBreakReady());
 end
 
 rule "HDH-L1-EssenceBreakActive"
